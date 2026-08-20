@@ -10,32 +10,199 @@ Three roles, three portals: **Customer**, **Seller**, **Admin**.
 
 ---
 
-## Quick start
+## Setup
 
-Requires **Node 18+** and a **MongoDB** instance (local or Atlas).
+### 1. Prerequisites
+
+| | Version | Check with |
+|---|---|---|
+| **Node.js** | 18 or newer (built on 22) | `node -v` |
+| **npm** | 9 or newer | `npm -v` |
+| **MongoDB** | 6 or newer — local, or a free Atlas cluster | `mongod --version` |
+| **Git** | any recent version | `git --version` |
+
+<details>
+<summary><strong>Don't have MongoDB?</strong> Two options</summary>
+
+**Option A — local install (no account needed)**
+
+- **Windows:** download MongoDB Community Server from
+  [mongodb.com/try/download/community](https://www.mongodb.com/try/download/community) and install
+  it. Tick *"Install MongoDB as a Service"* so it starts automatically.
+- **macOS:** `brew tap mongodb/brew && brew install mongodb-community && brew services start mongodb-community`
+- **Linux:** follow the
+  [official guide](https://www.mongodb.com/docs/manual/administration/install-on-linux/), then
+  `sudo systemctl start mongod`
+
+Verify it's listening on the default port:
 
 ```bash
-npm run install:all     # installs root, server and client dependencies
-cp server/.env.example server/.env   # then set MONGO_URI if it isn't local
-npm run seed            # ~85 products, 17 sellers, 78 PIN codes, 140 orders
-npm run dev             # API on :5001, storefront on :5173
+# Windows (PowerShell)
+Get-Service MongoDB
+
+# macOS / Linux
+mongosh --eval "db.runCommand({ ping: 1 })"
 ```
+
+**Option B — MongoDB Atlas (cloud, free tier)**
+
+Create a free cluster at [mongodb.com/atlas](https://www.mongodb.com/atlas), add your IP under
+*Network Access*, create a database user, then copy the connection string. You'll paste it into
+`MONGO_URI` in step 3.
+
+</details>
+
+### 2. Clone and install
+
+```bash
+git clone https://github.com/anya-xcode/Upahaar.git
+cd Upahaar
+npm run install:all
+```
+
+`install:all` installs three package trees — root (dev tooling), `server/` and `client/`. It takes
+a minute or two on a first run.
+
+### 3. Configure the server
+
+Copy the example env file and adjust it if you need to:
+
+```bash
+# macOS / Linux
+cp server/.env.example server/.env
+
+# Windows (PowerShell)
+Copy-Item server/.env.example server/.env
+```
+
+The defaults work as-is for a local MongoDB. Only two lines usually need attention:
+
+```ini
+PORT=5001                                       # change if 5001 is taken
+MONGO_URI=mongodb://127.0.0.1:27017/upahaar     # or your Atlas connection string
+JWT_SECRET=change_me_to_a_long_random_string    # set a real secret before deploying
+```
+
+> **Why 5001 and not 5000?** On Windows, port 5000 is often already claimed (AirPlay does the same
+> on macOS). If you change `PORT`, also update the proxy target in
+> [`client/vite.config.js`](client/vite.config.js) so the client keeps reaching the API.
+
+`server/.env` is gitignored — your secrets never leave your machine.
+
+### 4. Seed the database
+
+```bash
+npm run seed
+```
+
+This **wipes and repopulates** the `upahaar` database with 78 PIN codes across 9 cities, 17
+sellers, 85 products, 140 orders with payments and commissions, plus reviews, coupons and
+notifications — so the app looks like a working marketplace the first time you open it. Re-run it
+any time to get back to a clean state.
+
+### 5. Run it
+
+```bash
+npm run dev
+```
+
+That starts both processes together:
+
+| | URL |
+|---|---|
+| Storefront (Vite) | **http://localhost:5173** |
+| API (Express) | **http://localhost:5001** |
 
 Open **http://localhost:5173**, enter PIN code **400001**, and the four delivery tiers populate.
 
-### Demo accounts
+To run just one side: `npm run dev:server` or `npm run dev:client`.
 
-| Role | Email | Password | Where |
+### 6. Verify it's working
+
+```bash
+curl "http://localhost:5001/api/health"
+curl "http://localhost:5001/api/location/check?pincode=400001"
+```
+
+The second should report `"serviceable": true` with a tier breakdown.
+
+### 7. Sign in
+
+| Role | Email | Password | Sign in at |
 |---|---|---|---|
 | Customer | `ananya@upahaar.test` | `Test@123` | `/login` |
 | Seller | `seller@upahaar.test` | `Test@123` | `/seller/login` |
 | Admin | `admin@upahaar.test` | `Admin@123` | `/admin/login` |
 
 Other seeded customers (`rohan@`, `sanya@`, `arjun@`, `meher@`, `kabir@upahaar.test`) and sellers
-(`cocoa@`, `petal@`, `hamper@`, `cakecraft@`, `priya@`, `teddy@`, …) all use `Test@123`.
+(`cocoa@`, `petal@`, `hamper@`, `cakecraft@`, `priya@`, `teddy@`, …) all use `Test@123`. The login
+screens list the demo credentials too, so you can fill them in with one click.
 
-Seeded PIN codes with depth across all four tiers: **400001** (Mumbai), **110001** (Delhi),
+PIN codes with depth across all four delivery tiers: **400001** (Mumbai), **110001** (Delhi),
 **560038** (Bengaluru), **411004** (Pune), **700016** (Kolkata), **600017** (Chennai).
+
+---
+
+## Troubleshooting
+
+<details>
+<summary><strong>"Could not start the API" / MongoDB connection error</strong></summary>
+
+MongoDB isn't running, or `MONGO_URI` is wrong.
+
+```bash
+# Windows — start the service
+net start MongoDB
+
+# macOS
+brew services start mongodb-community
+
+# Linux
+sudo systemctl start mongod
+```
+
+On Atlas, check that your current IP is allowed under *Network Access*, and that the password in
+the connection string is URL-encoded if it contains special characters.
+</details>
+
+<details>
+<summary><strong><code>EADDRINUSE: address already in use :::5001</code></strong></summary>
+
+Something else holds the port — often a previous run that didn't shut down.
+
+```bash
+# Windows (PowerShell)
+Get-NetTCPConnection -LocalPort 5001 -State Listen | Select-Object OwningProcess
+Stop-Process -Id <pid> -Force
+
+# macOS / Linux
+lsof -ti:5001 | xargs kill -9
+```
+
+Or just set a different `PORT` in `server/.env` (and match it in `client/vite.config.js`).
+</details>
+
+<details>
+<summary><strong>The homepage is empty / no gifts show up</strong></summary>
+
+Either you haven't entered a PIN code, or the database isn't seeded. Use **400001** and run
+`npm run seed`. Availability is computed live — a PIN code with no sellers in range genuinely has
+nothing to show, which is the intended behaviour.
+</details>
+
+<details>
+<summary><strong>Login fails with the demo accounts</strong></summary>
+
+Passwords are hashed at seed time, so run `npm run seed` at least once. Note the admin signs in at
+`/admin/login`, not `/login` — storefront login deliberately rejects admin credentials.
+</details>
+
+<details>
+<summary><strong>Product images don't load</strong></summary>
+
+Seed imagery is hot-linked from Unsplash, so it needs an internet connection. Offline, every image
+falls back to a branded gradient tile with the category glyph — nothing breaks.
+</details>
 
 ---
 
