@@ -95,8 +95,8 @@ JWT_SECRET=change_me_to_a_long_random_string    # set a real secret before deplo
 npm run seed
 ```
 
-This **wipes and repopulates** the `upahaar` database with 78 PIN codes across 9 cities, 17
-sellers, 85 products, 140 orders with payments and commissions, plus reviews, coupons and
+This **wipes and repopulates** the `upahaar` database with 153 PIN codes (86 of them Delhi), 25
+sellers, 117 products, 140 orders with payments and commissions, plus reviews, coupons and
 notifications — so the app looks like a working marketplace the first time you open it. Re-run it
 any time to get back to a clean state.
 
@@ -113,7 +113,7 @@ That starts both processes together:
 | Storefront (Vite) | **http://localhost:5173** |
 | API (Express) | **http://localhost:5001** |
 
-Open **http://localhost:5173**, enter PIN code **400001**, and the four delivery tiers populate.
+Open **http://localhost:5173**, enter PIN code **110016** (Hauz Khas), and the delivery tiers populate.
 
 To run just one side: `npm run dev:server` or `npm run dev:client`.
 
@@ -121,7 +121,7 @@ To run just one side: `npm run dev:server` or `npm run dev:client`.
 
 ```bash
 curl "http://localhost:5001/api/health"
-curl "http://localhost:5001/api/location/check?pincode=400001"
+curl "http://localhost:5001/api/location/check?pincode=110016"
 ```
 
 The second should report `"serviceable": true` with a tier breakdown.
@@ -131,15 +131,17 @@ The second should report `"serviceable": true` with a tier breakdown.
 | Role | Email | Password | Sign in at |
 |---|---|---|---|
 | Customer | `ananya@upahaar.test` | `Test@123` | `/login` |
-| Seller | `seller@upahaar.test` | `Test@123` | `/seller/login` |
+| Seller | `chandnichowk@upahaar.test` | `Test@123` | `/seller/login` |
 | Admin | `admin@upahaar.test` | `Admin@123` | `/admin/login` |
 
 Other seeded customers (`rohan@`, `sanya@`, `arjun@`, `meher@`, `kabir@upahaar.test`) and sellers
 (`cocoa@`, `petal@`, `hamper@`, `cakecraft@`, `priya@`, `teddy@`, …) all use `Test@123`. The login
 screens list the demo credentials too, so you can fill them in with one click.
 
-PIN codes with depth across all four delivery tiers: **400001** (Mumbai), **110001** (Delhi),
-**560038** (Bengaluru), **411004** (Pune), **700016** (Kolkata), **600017** (Chennai).
+Delhi is the launch market — see [Delhi coverage](docs/delhi-coverage.md) for all 86 PIN codes,
+their fastest tier and which sellers reach them. Good PIN codes to try: **110016** (Hauz Khas),
+**110006** (Chandni Chowk), **110091** (Mayur Vihar), **110075** (Dwarka), **110040** (Narela,
+next-day only). Other cities remain seeded as expansion markets.
 
 ---
 
@@ -185,9 +187,12 @@ Or just set a different `PORT` in `server/.env` (and match it in `client/vite.co
 <details>
 <summary><strong>The homepage is empty / no gifts show up</strong></summary>
 
-Either you haven't entered a PIN code, or the database isn't seeded. Use **400001** and run
+Either you haven't entered a PIN code, or the database isn't seeded. Use **110016** and run
 `npm run seed`. Availability is computed live — a PIN code with no sellers in range genuinely has
 nothing to show, which is the intended behaviour.
+
+Note that tiers degrade outside seller trading hours: after roughly 22:00 IST every Delhi store is
+shut, so gifts correctly show "tomorrow" rather than 60 minutes.
 </details>
 
 <details>
@@ -229,7 +234,7 @@ Out-of-area products fall through to 2–3 day shipping — unless they're peris
 they simply aren't offered.
 
 ```
-Customer enters 400001
+Customer enters 110016
    └─ Pincode serviceable? ──no──> "We don't deliver here yet"
        └─ For each product:
            seller covers pincode? ──no──> perishable? ──yes──> hidden
@@ -237,6 +242,34 @@ Customer enters 400001
            └─yes─> wait-for-open + prep + dispatch + travel = ETA
                    └─ tier = worst(ETA bucket, product's promise, ops config)
 ```
+
+---
+
+## Launch market: Delhi
+
+Delhi is the market we are opening in, so it carries full coverage — **86 PIN codes across 11
+districts**, served by **8 launch sellers**, defined in
+[`server/src/seed/data/delhi.js`](server/src/seed/data/delhi.js) and
+[`delhiSellers.js`](server/src/seed/data/delhiSellers.js).
+
+| Fastest tier | PIN codes | Where |
+|---|---|---|
+| 60 minutes | 41 | Dense inner Delhi — CP, Chandni Chowk, South Delhi, Punjabi Bagh, trans-Yamuna |
+| 3 hours | 38 | Wider urban Delhi — Dwarka, Rohini, Vasant Kunj, Najafgarh |
+| Next day | 7 | Outer belt — Narela, Bawana, Alipur, Karawal Nagar |
+
+Every Delhi PIN code has at least one seller within delivery radius, so nothing falls back to
+courier-only shipping. [`docs/delhi-coverage.md`](docs/delhi-coverage.md) lists them district by
+district and flags where a second seller would add the most resilience — regenerate it with
+`npm run docs:delhi`.
+
+The other eight cities stay seeded as expansion markets. To run **Delhi-only**, set
+`LAUNCH_MARKETS` in [`server/src/seed/data/locations.js`](server/src/seed/data/locations.js) to
+`['Delhi']` and reseed — sellers, PIN codes and zones outside the list are dropped automatically.
+
+> Tiers are a **ceiling**, not a promise. The live tier is computed per gift from seller distance,
+> stock, working hours and preparation time — so a 60-minute area correctly shows "tomorrow" once
+> its sellers have closed for the night.
 
 ---
 
@@ -351,6 +384,7 @@ database → MongoDB Atlas. Set `CLIENT_ORIGIN` on the server and point the clie
 |---|---|
 | `npm run install:all` | Install root + server + client |
 | `npm run seed` | Wipe and reseed the database |
+| `npm run docs:delhi` | Regenerate the Delhi coverage map |
 | `npm run dev` | Run API and client together |
 | `npm run dev:server` / `dev:client` | Run one side only |
 | `npm run build` | Production build of the client |

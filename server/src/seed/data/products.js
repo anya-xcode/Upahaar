@@ -27,7 +27,7 @@ function pickPhotos(pool, count = 3) {
   });
 }
 
-function P(n, c, pool, o, price, mrp, t, prep, extra = {}) {
+export function P(n, c, pool, o, price, mrp, t, prep, extra = {}) {
   photoCursor += 1;
   return {
     n,

@@ -28,8 +28,14 @@ import BlogPost from '../models/BlogPost.js';
 
 import { PINCODES, ZONES } from './data/locations.js';
 import { CATEGORIES, OCCASIONS, FAQS, POSTS } from './data/catalog.js';
-import { SELLERS } from './data/sellers.js';
-import { PRODUCTS } from './data/products.js';
+import { SELLERS as OTHER_SELLERS } from './data/sellers.js';
+import { PRODUCTS as OTHER_PRODUCTS } from './data/products.js';
+import { DELHI_SELLERS, DELHI_PRODUCTS } from './data/delhiSellers.js';
+import { LAUNCH_MARKETS } from './data/locations.js';
+
+/** Delhi is the launch market, so its roster leads. */
+const SELLERS = [...DELHI_SELLERS, ...OTHER_SELLERS].filter((s) => LAUNCH_MARKETS.includes(s.city));
+const PRODUCTS = { ...OTHER_PRODUCTS, ...DELHI_PRODUCTS };
 import { ROLES, SELLER_STATUS, KYC_STATUS, ORDER_STATUS, ORDER_STATUS_META, ORDER_FLOW, PAYMENT_METHODS, PAYMENT_STATUS, TIER_META } from '../utils/constants.js';
 import { slugify, makeOrderId, money, randomReferralCode } from '../utils/helpers.js';
 import { estimateDeliveryAt } from '../services/deliveryEngine.js';
@@ -61,9 +67,9 @@ const DEMO_PASSWORD = 'Test@123';
 const ADMIN_PASSWORD = 'Admin@123';
 
 const CUSTOMERS = [
-  { name: 'Ananya Gupta', email: 'ananya@upahaar.test', mobile: '+91 98200 55001', pincode: '400001', city: 'Mumbai', state: 'Maharashtra', house: '12B, Sea Breeze Apartments', street: 'Marine Drive', landmark: 'Opposite Wankhede Stadium' },
-  { name: 'Rohan Verma', email: 'rohan@upahaar.test', mobile: '+91 98200 55002', pincode: '400050', city: 'Mumbai', state: 'Maharashtra', house: '404, Hill Road Residency', street: 'Hill Road', landmark: 'Near Mount Mary Church' },
-  { name: 'Sanya Kapoor', email: 'sanya@upahaar.test', mobile: '+91 98110 55003', pincode: '110001', city: 'Delhi', state: 'Delhi', house: 'B-22, Connaught Circus', street: 'Barakhamba Road', landmark: 'Above Cafe Coffee Day' },
+  { name: 'Ananya Gupta', email: 'ananya@upahaar.test', mobile: '+91 98110 55001', pincode: '110016', city: 'Delhi', state: 'Delhi', house: 'C-14, Hauz Khas Enclave', street: 'Aurobindo Marg', landmark: 'Near Deer Park' },
+  { name: 'Rohan Verma', email: 'rohan@upahaar.test', mobile: '+91 98110 55002', pincode: '110091', city: 'Delhi', state: 'Delhi', house: '204, Pocket 2, Mayur Vihar Phase 1', street: 'Acharya Niketan', landmark: 'Near Mayur Vihar Metro' },
+  { name: 'Sanya Kapoor', email: 'sanya@upahaar.test', mobile: '+91 98110 55003', pincode: '110075', city: 'Delhi', state: 'Delhi', house: 'A-402, Sector 12 Dwarka', street: 'Dwarka Road', landmark: 'Near Dwarka Sector 12 Metro' },
   { name: 'Arjun Reddy', email: 'arjun@upahaar.test', mobile: '+91 98450 55004', pincode: '560038', city: 'Bengaluru', state: 'Karnataka', house: '7, Ranka Colony', street: '100 Feet Road', landmark: 'Near Indiranagar Metro' },
   { name: 'Meher Bhatia', email: 'meher@upahaar.test', mobile: '+91 98220 55005', pincode: '411004', city: 'Pune', state: 'Maharashtra', house: '3rd Floor, Deccan Heights', street: 'FC Road', landmark: 'Beside Goodluck Cafe' },
   { name: 'Kabir Singh', email: 'kabir@upahaar.test', mobile: '+91 98300 55006', pincode: '700016', city: 'Kolkata', state: 'West Bengal', house: '9A, Park Mansions', street: 'Park Street', landmark: 'Near Flurys' },
@@ -630,8 +636,8 @@ async function seed() {
   console.log('   ─────────────────────────────────────────────');
   console.log('   Seed complete.\n');
   console.log('   Demo accounts');
-  console.log(`   Customer   ananya@upahaar.test    ${DEMO_PASSWORD}   (PIN 400001)`);
-  console.log(`   Seller     seller@upahaar.test    ${DEMO_PASSWORD}   (Blooms & Bakes, Fort)`);
+  console.log(`   Customer   ananya@upahaar.test    ${DEMO_PASSWORD}   (PIN 110016, Delhi)`);
+  console.log(`   Seller     chandnichowk@upahaar.test  ${DEMO_PASSWORD}   (Chandni Chowk Mithai Co.)`);
   console.log(`   Admin      admin@upahaar.test     ${ADMIN_PASSWORD}   (via /admin/login)`);
   console.log('\n   Other customers: rohan@ · sanya@ · arjun@ · meher@ · kabir@upahaar.test');
   console.log('   Other sellers:   cocoa@ · petal@ · hamper@ · cakecraft@ · priya@ · teddy@upahaar.test …');

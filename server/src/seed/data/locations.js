@@ -1,3 +1,5 @@
+import { DELHI_PINCODES, DELHI_ZONES } from './delhi.js';
+
 /**
  * Serviceability map for the demo dataset.
  *
@@ -40,24 +42,6 @@ const CITIES = [
       ['400076', 'Powai', 19.1176, 72.9060, false, true],
       ['400093', 'Marol', 19.1136, 72.8697, false, true],
       ['400601', 'Thane West', 19.1943, 72.9615, false, false],
-    ],
-  },
-  {
-    city: 'Delhi',
-    state: 'Delhi',
-    partners: ['Upahaar Express', 'Dunzo'],
-    pincodes: [
-      ['110001', 'Connaught Place', 28.6315, 77.2167, true, true],
-      ['110002', 'Darya Ganj', 28.6414, 77.2436, true, true],
-      ['110003', 'Lodhi Road', 28.5892, 77.2273, true, true],
-      ['110005', 'Karol Bagh', 28.6519, 77.1900, true, true],
-      ['110016', 'Hauz Khas', 28.5494, 77.2001, true, true],
-      ['110017', 'Saket', 28.5245, 77.2066, true, true],
-      ['110019', 'Kalkaji', 28.5355, 77.2588, false, true],
-      ['110024', 'Lajpat Nagar', 28.5677, 77.2433, true, true],
-      ['110029', 'AIIMS', 28.5672, 77.2100, false, true],
-      ['110048', 'Greater Kailash', 28.5494, 77.2425, true, true],
-      ['110070', 'Vasant Kunj', 28.5200, 77.1591, false, true],
     ],
   },
   {
@@ -150,8 +134,17 @@ const CITIES = [
   },
 ];
 
-/** Flattened Pincode documents, ready to insert. */
-export const PINCODES = CITIES.flatMap((c) =>
+/**
+ * The markets we are live in.
+ *
+ * Delhi is the launch market and carries full coverage from `delhi.js`; the
+ * rest are kept as expansion markets so the platform can be demonstrated
+ * nationally. To run Delhi-only, set this to `['Delhi']` and reseed.
+ */
+export const LAUNCH_MARKETS = ['Delhi', 'Mumbai', 'Bengaluru', 'Pune', 'Hyderabad', 'Kolkata', 'Chennai', 'Jaipur', 'Gurugram'];
+
+/** Flattened Pincode documents for every market except Delhi. */
+const OTHER_PINCODES = CITIES.flatMap((c) =>
   c.pincodes.map(([code, area, lat, lng, express, priority]) => ({
     code,
     city: c.city,
@@ -168,8 +161,8 @@ export const PINCODES = CITIES.flatMap((c) =>
   }))
 );
 
-/** One delivery zone per city, with riders on shift where express is live. */
-export const ZONES = CITIES.map((c) => ({
+/** One delivery zone per non-Delhi city. */
+const OTHER_ZONES = CITIES.map((c) => ({
   name: `${c.city} Metro`,
   city: c.city,
   state: c.state,
@@ -180,6 +173,16 @@ export const ZONES = CITIES.map((c) => ({
   express60Enabled: c.pincodes.some(([, , , , express]) => express),
   isActive: true,
 }));
+
+/**
+ * Delhi first, then the expansion markets — filtered to whatever
+ * LAUNCH_MARKETS allows, so switching to a single-city launch is one edit.
+ */
+export const PINCODES = [...DELHI_PINCODES, ...OTHER_PINCODES].filter((p) =>
+  LAUNCH_MARKETS.includes(p.city)
+);
+
+export const ZONES = [...DELHI_ZONES, ...OTHER_ZONES].filter((z) => LAUNCH_MARKETS.includes(z.city));
 
 export const CITY_CENTERS = Object.fromEntries(
   CITIES.map((c) => [c.city, { lat: c.pincodes[0][2], lng: c.pincodes[0][3], state: c.state }])

@@ -11,6 +11,8 @@ const pincodeSchema = new mongoose.Schema(
     city: { type: String, required: true, index: true },
     state: { type: String, required: true },
     area: String,
+    /** Administrative district — how ops groups a large market like Delhi. */
+    district: { type: String, index: true },
     location: { lat: Number, lng: Number },
 
     isServiceable: { type: Boolean, default: true, index: true },
