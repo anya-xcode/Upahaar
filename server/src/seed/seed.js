@@ -47,6 +47,16 @@ const pickN = (arr, n) => [...arr].sort(() => rnd() - 0.5).slice(0, n);
 const intBetween = (a, b) => a + Math.floor(rnd() * (b - a + 1));
 const daysBack = (n) => new Date(Date.now() - n * 86400000);
 
+/** Storefront photography, one per seller — verified stable Unsplash assets. */
+const STORE_PHOTOS = [
+  '1486427944299-d1955d23e34d', '1549465220-1a8b9238cd48', '1519225421980-715cb0215aed',
+  '1513885535751-8b9238bd345a', '1535254973040-607b474cb50d', '1513151233558-d860c5398176',
+  '1596461404969-9ae70f2830c1', '1490481651871-ab68de25d43d', '1607344645866-009c320b63e0',
+  '1563729784474-d77dbb933a9e', '1548544149-4835e62ee5b3', '1578985545062-69928b1d9587',
+  '1608303588026-884930af2559', '1558618666-fcd25c85cd64', '1502920917128-1aa500764cbd',
+  '1600334089648-b0d9d3028eb2', '1512909006721-3d6018887383',
+].map((id) => `https://images.unsplash.com/photo-${id}?w=1400&q=80&auto=format&fit=crop`);
+
 const DEMO_PASSWORD = 'Test@123';
 const ADMIN_PASSWORD = 'Admin@123';
 
@@ -150,7 +160,7 @@ async function seed() {
 
   /* --- Sellers --- */
   const sellers = [];
-  for (const s of SELLERS) {
+  for (const [sellerIndex, s] of SELLERS.entries()) {
     const user = await User.create({
       name: s.ownerName,
       email: s.email,
@@ -169,6 +179,7 @@ async function seed() {
       slug: slugify(s.businessName),
       tagline: s.tagline,
       description: s.description,
+      storeImages: [STORE_PHOTOS[sellerIndex % STORE_PHOTOS.length]],
       address: {
         line1: `${s.businessName} Store`,
         street: s.tagline.split('·')[0].trim(),

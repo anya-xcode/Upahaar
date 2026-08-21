@@ -79,13 +79,13 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-cream/85 backdrop-blur-xl">
       {/* Brand promise strip */}
-      <div className="hidden bg-ink px-4 py-1.5 text-center text-[11.5px] font-medium tracking-wide text-white/85 sm:block">
+      <div className="hidden bg-ink px-4 py-2 text-center caps !tracking-[0.18em] text-white/70 sm:block">
         Don't just send a gift. Send a moment. &nbsp;·&nbsp; Free delivery on next-day orders &nbsp;·&nbsp; Use{' '}
         <span className="font-bold text-rose-200">WELCOME10</span> for 10% off your first gift
       </div>
 
       <div className="container-app">
-        <div className="flex h-[68px] items-center gap-3 sm:gap-5">
+        <div className="flex h-[76px] items-center gap-4 sm:gap-7">
           <button
             className="rounded-xl p-2 text-ink-soft transition hover:bg-blush lg:hidden"
             onClick={() => setMenuOpen(true)}
@@ -242,14 +242,12 @@ export default function Header() {
         </div>
 
         {/* Category rail */}
-        <nav className="hide-scrollbar -mx-4 flex items-center gap-1 overflow-x-auto border-t border-line px-4 py-2 lg:mx-0 lg:px-0">
+        <nav className="hide-scrollbar -mx-4 flex items-center gap-7 overflow-x-auto border-t border-line px-4 py-3 lg:mx-0 lg:px-0">
           <NavLink
             to="/gifts"
             end
             className={({ isActive }) =>
-              `shrink-0 rounded-full px-3 py-1.5 text-[13px] font-semibold transition ${
-                isActive ? 'bg-rose-500 text-white' : 'text-ink-soft hover:bg-blush hover:text-rose-600'
-              }`
+              `shrink-0 caps transition-colors ${isActive ? 'text-rose-600' : 'text-ink-muted hover:text-ink'}`
             }
           >
             <Grid size={13} className="mr-1 inline" />
@@ -259,22 +257,22 @@ export default function Header() {
             <Link
               key={c._id}
               to={`/gifts?category=${c._id}`}
-              className="shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium text-ink-soft transition hover:bg-blush hover:text-rose-600"
+              className="shrink-0 caps text-ink-muted transition-colors hover:text-ink"
             >
               
               {c.name}
             </Link>
           ))}
-          <Link to="/occasions" className="shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium text-ink-soft transition hover:bg-blush hover:text-rose-600">
+          <Link to="/occasions" className="shrink-0 caps text-ink-muted transition-colors hover:text-ink">
             Occasions
           </Link>
-          <Link to="/sellers" className="shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium text-ink-soft transition hover:bg-blush hover:text-rose-600">
+          <Link to="/sellers" className="shrink-0 caps text-ink-muted transition-colors hover:text-ink">
             Local sellers
           </Link>
           {info?.tiers?.some((t) => t.tier === 'EXPRESS_60') && (
             <Link
               to="/gifts?tier=EXPRESS_60"
-              className="ml-auto hidden shrink-0 rounded-full bg-rose-50 px-3 py-1.5 text-[13px] font-bold text-rose-600 transition hover:bg-rose-100 lg:block"
+              className="ml-auto hidden shrink-0 caps text-rose-500 transition-colors hover:text-rose-700 lg:flex lg:items-center lg:gap-1.5"
             >
               <Bolt size={13} className="mr-1 inline" /> 60-minute gifts
             </Link>

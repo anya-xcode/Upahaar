@@ -102,20 +102,76 @@
     @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold;
   }
 
+  /* ---------------------------------------------------------------------
+     Editorial layer.
+
+     The storefront is composed like a magazine, not a dashboard: imagery
+     carries the page, type sets hierarchy, and chrome (borders, shadows,
+     boxes) is removed wherever it isn't doing real work.
+     --------------------------------------------------------------------- */
+
   .section-title {
-    @apply font-display text-[26px] font-semibold text-ink sm:text-[30px];
-    letter-spacing: -0.024em;
+    @apply font-display text-[30px] font-semibold text-ink sm:text-[38px];
+    letter-spacing: -0.03em;
+    line-height: 1.08;
   }
 
-  /* The small letterspaced caps above a section heading. */
+  /* The oversized headline used at the top of a page or a hero. */
+  .display-xl {
+    @apply font-display font-semibold;
+    font-size: clamp(2.75rem, 6.5vw, 5.25rem);
+    line-height: 0.98;
+    letter-spacing: -0.04em;
+  }
+  .display-lg {
+    @apply font-display font-semibold;
+    font-size: clamp(2rem, 4vw, 3.25rem);
+    line-height: 1.04;
+    letter-spacing: -0.032em;
+  }
+
+  /* Small letterspaced caps — the editorial workhorse for eyebrows,
+     delivery promises and metadata. */
+  .caps {
+    @apply text-[10.5px] font-bold uppercase;
+    letter-spacing: 0.2em;
+  }
   .eyebrow {
-    @apply text-[10.5px] font-bold uppercase tracking-[0.2em] text-rose-500;
+    @apply caps text-rose-500;
   }
 
-  /* A hairline rule that fades out — used to close sections without a hard line. */
+  /* Hairlines instead of boxes. */
+  .rule {
+    @apply h-px w-full border-0 bg-line;
+  }
   .rule-fade {
     @apply h-px w-full border-0;
     background: linear-gradient(90deg, theme('colors.line'), transparent);
+  }
+
+  /* A borderless, shadowless surface — the default for storefront content.
+     `.card` is kept for the seller and admin panels, where boxes are correct. */
+  .surface {
+    @apply rounded-xl2 bg-white;
+  }
+
+  /* Images are the loudest element on the page, so they get the generous
+     radius and a hairline to stop white product shots bleeding into ivory. */
+  .frame {
+    @apply overflow-hidden rounded-[1.15rem] bg-blush;
+    box-shadow: inset 0 0 0 1px rgba(36, 26, 32, 0.05);
+  }
+
+  /* Quiet link that underlines from the left on hover. */
+  .link-underline {
+    @apply relative inline-flex items-center gap-1.5 font-semibold text-ink transition-colors hover:text-rose-600;
+  }
+  .link-underline::after {
+    content: '';
+    @apply absolute -bottom-0.5 left-0 h-px w-0 bg-rose-500 transition-all duration-300;
+  }
+  .link-underline:hover::after {
+    @apply w-full;
   }
 
   /* Loading placeholder used by every list before its data lands. */

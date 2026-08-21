@@ -155,13 +155,12 @@ export function Skeleton({ className = '' }) {
 
 export function ProductCardSkeleton() {
   return (
-    <div className="card overflow-hidden">
-      <Skeleton className="aspect-[4/5] w-full rounded-none" />
-      <div className="space-y-2.5 p-4">
-        <Skeleton className="h-3 w-20" />
+    <div>
+      <Skeleton className="aspect-[4/5] w-full rounded-[1.15rem]" />
+      <div className="space-y-2.5 pt-4">
+        <Skeleton className="h-2.5 w-20" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-2/3" />
-        <Skeleton className="h-5 w-24" />
       </div>
     </div>
   );
@@ -177,18 +176,23 @@ export function Spinner({ size = 20, className = '' }) {
   );
 }
 
-/** Horizontal rail with a heading and an optional "see all" link. */
+/**
+ * Editorial section heading: an eyebrow, a large display title, and a hairline
+ * that runs to the action on the right. The rule is what makes a page of
+ * sections read as a composed layout rather than a stack of widgets.
+ */
 export function SectionHeader({ eyebrow, title, subtitle, action, className = '' }) {
   return (
-    <div className={`mb-6 flex flex-wrap items-end justify-between gap-4 ${className}`}>
-      <div>
-        {eyebrow && (
-          <p className="mb-1.5 text-xs font-bold uppercase tracking-[0.18em] text-rose-500">{eyebrow}</p>
-        )}
-        <h2 className="section-title">{title}</h2>
-        {subtitle && <p className="mt-1.5 max-w-2xl text-sm text-ink-muted">{subtitle}</p>}
+    <div className={`mb-8 ${className}`}>
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+        <div className="max-w-2xl">
+          {eyebrow && <p className="eyebrow mb-3">{eyebrow}</p>}
+          <h2 className="section-title">{title}</h2>
+          {subtitle && <p className="mt-3 text-[15px] leading-relaxed text-ink-muted">{subtitle}</p>}
+        </div>
+        {action && <div className="shrink-0 pb-1">{action}</div>}
       </div>
-      {action}
+      <hr className="rule mt-7" />
     </div>
   );
 }

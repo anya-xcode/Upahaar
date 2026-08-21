@@ -34,7 +34,7 @@ export default function Wishlist() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}
         </div>
       ) : !visible.length ? (
@@ -45,7 +45,7 @@ export default function Wishlist() {
           action={<Link to="/gifts" className="btn-primary">Browse gifts</Link>}
         />
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3">
           {visible.map((p) => (
             <ProductCard key={p._id} product={p} />
           ))}

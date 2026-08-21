@@ -177,7 +177,7 @@ export default function Gifts() {
         {/* Results */}
         <div>
           {loading ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3">
               {Array.from({ length: 9 }).map((_, i) => <ProductCardSkeleton key={i} />)}
             </div>
           ) : !pincode ? (
@@ -206,7 +206,7 @@ export default function Gifts() {
             />
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3">
                 {data.products.map((p) => (
                   <ProductCard key={p._id} product={p} />
                 ))}

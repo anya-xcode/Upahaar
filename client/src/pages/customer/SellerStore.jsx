@@ -26,7 +26,7 @@ export default function SellerStore() {
     return (
       <div className="container-app space-y-6 py-10">
         <Skeleton className="h-52 w-full rounded-4xl" />
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-12 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-72 w-full rounded-xl2" />)}
         </div>
       </div>
@@ -121,7 +121,7 @@ export default function SellerStore() {
           subtitle={pincode ? `Showing what can reach ${pincode}.` : 'Set your PIN code to see delivery times.'}
         />
         {products?.length ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3 lg:grid-cols-4">
             {products.map((p) => (
               <ProductCard key={p._id} product={p} compact />
             ))}
