@@ -245,6 +245,32 @@ Customer enters 110016
 
 ---
 
+## Product approval
+
+A seller can create and edit freely, but **nothing reaches a customer until an admin approves it**.
+
+```
+Seller uploads  →  approvalStatus: PENDING  →  admin reviews  →  APPROVED → live
+                                                             ↘  REJECTED + reason → back to seller
+```
+
+- The storefront requires `isActive && approvalStatus === 'APPROVED'` — enforced in
+  `catalogService`, product detail, search typeahead, pincode serviceability and wishlist
+  rehydration, so there is no surface that leaks an unreviewed product.
+- A **PENDING** or **REJECTED** product stays fully visible to its own seller, with the rejection
+  reason shown against it.
+- Rejecting **requires a reason**; the seller is notified with it.
+- Editing **price, stock or delivery settings keeps approval**. Editing **name, description,
+  images or highlights re-opens review** — the product drops off the storefront until it is
+  approved again. Re-reviewing routine price changes would make trading painful for no safety gain.
+- A seller cannot set their own `approvalStatus`; the field is stripped from seller updates.
+
+Admin: **Products → Awaiting review** (`/admin/products?approval=PENDING`), also surfaced as a
+dashboard tile and a badge on the Products nav item.
+Seller: approval state per row in **Products**, and a dashboard tile when something is in review.
+
+---
+
 ## Launch market: Delhi
 
 Delhi is the market we are opening in, so it carries full coverage — **86 PIN codes across 11

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api.js';
 import { toast } from '../../store/toastStore.js';
 import { PageHeader, PanelCard, DataTable, SearchInput, FilterTabs } from '../../components/common/panel.jsx';
 import { Img, Badge, DeliveryBadge, Pagination, EmptyState, Rating } from '../../components/common/ui.jsx';
-import { Sparkles, Star, ChevronRight } from '../../components/common/Icons.jsx';
+import { Sparkles, Star, Check, Close } from '../../components/common/Icons.jsx';
 import { inr } from '../../lib/format.js';
 
 const FILTERS = [
@@ -14,6 +14,19 @@ const FILTERS = [
 ];
 
 /** Badge text only — DeliveryBadge supplies the glyph from the tier key. */
+const APPROVAL = {
+  APPROVED: { tone: 'green', label: 'Approved' },
+  PENDING: { tone: 'amber', label: 'Pending' },
+  REJECTED: { tone: 'red', label: 'Rejected' },
+};
+
+const APPROVAL_FILTERS = [
+  ['PENDING', 'Awaiting review'],
+  ['APPROVED', 'Approved'],
+  ['REJECTED', 'Rejected'],
+  ['', 'All'],
+];
+
 const TIER_META = {
   EXPRESS_60: { badge: '60 MIN' },
   PRIORITY_3H: { badge: '3 HOURS' },
@@ -22,12 +35,14 @@ const TIER_META = {
 };
 
 export default function AdminProducts() {
+  const [params] = useSearchParams();
   const [data, setData] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [isActive, setIsActive] = useState('');
   const [category, setCategory] = useState('');
+  const [approval, setApproval] = useState(params.get('approval') || '');
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -38,7 +53,14 @@ export default function AdminProducts() {
     setLoading(true);
     try {
       const { data: d } = await api.get('/admin/products', {
-        params: { q: q || undefined, isActive: isActive || undefined, category: category || undefined, page, limit: 20 },
+        params: {
+          q: q || undefined,
+          isActive: isActive || undefined,
+          category: category || undefined,
+          approval: approval || undefined,
+          page,
+          limit: 20,
+        },
       });
       setData(d);
     } catch {
@@ -51,12 +73,29 @@ export default function AdminProducts() {
   useEffect(() => {
     const t = setTimeout(load, q ? 300 : 0);
     return () => clearTimeout(t);
-  }, [q, isActive, category, page]);
+  }, [q, isActive, category, approval, page]);
 
   async function patch(product, changes, message) {
     try {
       await api.patch(`/admin/products/${product._id}`, changes);
       toast.success(message);
+      await load();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  /** Approve publishes to the storefront; reject asks for a reason first. */
+  async function review(product, approvalStatus) {
+    let note;
+    if (approvalStatus === 'REJECTED') {
+      note = window.prompt(`What does ${product.seller?.businessName} need to change about "${product.name}"?`);
+      if (note === null) return;
+      if (!note.trim()) return toast.error('A reason is required so the seller knows what to fix');
+    }
+    try {
+      await api.patch(`/admin/products/${product._id}/approval`, { approvalStatus, note });
+      toast.success(approvalStatus === 'APPROVED' ? `"${product.name}" is live` : 'Sent back to the seller');
       await load();
     } catch (err) {
       toast.error(err.message);
@@ -94,8 +133,40 @@ export default function AdminProducts() {
         <Badge tone={p.stock === 0 ? 'red' : p.stock <= p.lowStockThreshold ? 'amber' : 'green'}>{p.stock}</Badge>
       ),
     },
+    {
+      key: 'approvalStatus',
+      header: 'Review',
+      render: (p) => {
+        const a = APPROVAL[p.approvalStatus] || APPROVAL.PENDING;
+        return <Badge tone={a.tone}>{a.label}</Badge>;
+      },
+    },
     { key: 'baseTier', header: 'Speed', render: (p) => <DeliveryBadge tier={p.baseTier} meta={TIER_META[p.baseTier]} /> },
     { key: 'rating', header: 'Rating', render: (p) => <Rating value={p.rating} count={p.reviewCount} /> },
+    {
+      key: 'review',
+      header: '',
+      render: (p) =>
+        p.approvalStatus !== 'APPROVED' ? (
+          <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => review(p, 'APPROVED')} className="btn-ghost btn-sm !border-[#D3EDDF] !text-[#1F6B45]">
+              <Check size={13} /> Approve
+            </button>
+            {p.approvalStatus !== 'REJECTED' && (
+              <button onClick={() => review(p, 'REJECTED')} className="btn-ghost btn-sm !text-[#B3261E]">
+                <Close size={13} />
+              </button>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); review(p, 'PENDING'); }}
+            className="btn-ghost btn-sm"
+          >
+            Re-review
+          </button>
+        ),
+    },
     {
       key: 'flags',
       header: 'Flags',
@@ -137,6 +208,15 @@ export default function AdminProducts() {
         subtitle={data ? `${data.total} product${data.total === 1 ? '' : 's'} across all sellers` : 'Platform catalogue'}
       />
 
+      <div className="mb-4">
+        <FilterTabs
+          options={APPROVAL_FILTERS}
+          value={approval}
+          counts={data?.counts}
+          onChange={(v) => { setApproval(v); setPage(1); }}
+        />
+      </div>
+
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Search products…" className="w-full sm:w-64" />
         <select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }} className="input !w-auto !py-2 text-[13px]">
@@ -161,6 +241,9 @@ export default function AdminProducts() {
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   <span className="text-[13px] font-bold text-ink">{inr(p.price)}</span>
                   <Badge tone={p.isActive ? 'green' : 'neutral'} className="!text-[10px]">{p.isActive ? 'Live' : 'Hidden'}</Badge>
+                  <Badge tone={(APPROVAL[p.approvalStatus] || APPROVAL.PENDING).tone} className="!text-[10px]">
+                    {(APPROVAL[p.approvalStatus] || APPROVAL.PENDING).label}
+                  </Badge>
                   <DeliveryBadge tier={p.baseTier} meta={TIER_META[p.baseTier]} />
                 </div>
               </div>

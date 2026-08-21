@@ -55,9 +55,26 @@ const productSchema = new mongoose.Schema(
     soldCount: { type: Number, default: 0 },
     viewCount: { type: Number, default: 0 },
 
+    /** The seller's own visibility switch. */
     isActive: { type: Boolean, default: true, index: true },
     isFeatured: { type: Boolean, default: false },
     isBestSeller: { type: Boolean, default: false },
+
+    /**
+     * The admin gate. A seller can create and edit freely, but nothing reaches
+     * a customer until it has been reviewed — the storefront requires
+     * APPROVED, so PENDING and REJECTED products are invisible to shoppers
+     * while staying fully visible to their seller.
+     */
+    approvalStatus: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      default: 'PENDING',
+      index: true,
+    },
+    approvalNote: String,
+    submittedAt: { type: Date, default: Date.now },
+    reviewedAt: Date,
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

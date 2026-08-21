@@ -30,6 +30,7 @@ router.post('/orders/:orderId/refund', admin.refundOrder);
 /* -------------------------------- Products ------------------------------- */
 router.get('/products', cms.listAllProducts);
 router.patch('/products/:id', cms.toggleProductActive);
+router.patch('/products/:id/approval', cms.reviewProduct);
 
 /* ------------------------------ Moderation ------------------------------- */
 router.get('/reviews', admin.listAllReviews);

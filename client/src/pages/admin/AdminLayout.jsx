@@ -28,7 +28,7 @@ export default function AdminLayout() {
     { section: 'Marketplace' },
     { to: '/admin/sellers', icon: Store, label: 'Sellers', badge: stats.pendingSellers },
     { to: '/admin/orders', icon: Gift, label: 'Orders' },
-    { to: '/admin/products', icon: Grid, label: 'Products' },
+    { to: '/admin/products', icon: Grid, label: 'Products', badge: stats.pendingProducts },
     { to: '/admin/users', icon: Users, label: 'Customers' },
     { to: '/admin/reviews', icon: Star, label: 'Reviews', badge: stats.pendingReviews },
     { section: 'Operations' },

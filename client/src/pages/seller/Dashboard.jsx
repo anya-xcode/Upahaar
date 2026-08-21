@@ -51,7 +51,7 @@ export default function SellerDashboard() {
       />
 
       {/* Attention strip */}
-      {(stats.pendingOrders > 0 || stats.lowStock > 0 || stats.outOfStock > 0) && (
+      {(stats.pendingOrders > 0 || stats.lowStock > 0 || stats.outOfStock > 0 || stats.pendingApproval > 0) && (
         <div className="grid gap-3 sm:grid-cols-3">
           {stats.pendingOrders > 0 && (
             <Link to="/seller/orders?status=PLACED" className="flex items-center gap-3 rounded-xl2 border border-rose-200 bg-rose-50 p-4 transition hover:shadow-soft">
@@ -71,6 +71,16 @@ export default function SellerDashboard() {
                 <span className="block text-[12px] text-gold-600/80">Restock before they sell out</span>
               </span>
               <ChevronRight size={16} className="shrink-0 text-gold-600" />
+            </Link>
+          )}
+          {stats.pendingApproval > 0 && (
+            <Link to="/seller/products?approval=PENDING" className="flex items-center gap-3 rounded-xl2 border border-[#D5E6FA] bg-[#EAF3FF] p-4 transition hover:shadow-soft">
+              <Package size={20} className="shrink-0 text-[#2C5B93]" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-[#2C5B93]">{stats.pendingApproval} product(s) in review</span>
+                <span className="block text-[12px] text-[#2C5B93]/80">Live once an admin approves them</span>
+              </span>
+              <ChevronRight size={16} className="shrink-0 text-[#2C5B93]" />
             </Link>
           )}
           {stats.outOfStock > 0 && (
@@ -95,7 +105,7 @@ export default function SellerDashboard() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Package} label="Products" value={stats.productCount} sub={`${stats.activeProducts} live`} to="/seller/products" tone="ink" />
+        <StatCard icon={Package} label="Products" value={stats.productCount} sub={`${stats.activeProducts} live · ${stats.pendingApproval || 0} in review`} to="/seller/products" tone="ink" />
         <StatCard icon={Warning} label="Low stock" value={stats.lowStock} sub={`${stats.outOfStock} out of stock`} tone="gold" to="/seller/inventory" />
         <StatCard icon={Star} label="Store rating" value={seller.rating?.toFixed(1) || '—'} sub={`${seller.reviewCount} reviews`} tone="gold" to="/seller/reviews" />
         <StatCard icon={Truck} label="Delivery rating" value={seller.deliveryRating?.toFixed(1) || '—'} sub="from customers" tone="blue" />

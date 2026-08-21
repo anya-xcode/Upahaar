@@ -38,6 +38,7 @@ export const checkPincode = asyncHandler(async (req, res) => {
   // a tier is only "available" if something can actually arrive that fast.
   const products = await Product.find({
     isActive: true,
+    approvalStatus: 'APPROVED',
     stock: { $gt: 0 },
     $or: [{ seller: { $in: sellerIds } }, { isPerishable: false }],
   })

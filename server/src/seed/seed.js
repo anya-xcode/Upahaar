@@ -296,6 +296,9 @@ async function seed() {
         tags: spec.tags || [],
         isFeatured: Boolean(spec.feat),
         isBestSeller: Boolean(spec.best),
+        // The established catalogue has already been through review.
+        approvalStatus: 'APPROVED',
+        reviewedAt: daysBack(intBetween(5, 60)),
         soldCount: intBetween(8, 320),
         viewCount: intBetween(120, 4200),
         createdAt: daysBack(intBetween(5, 400)),
@@ -625,6 +628,27 @@ async function seed() {
   await Notification.insertMany(notifications);
 
   /* --- Deliberate low-stock rows so the seller dashboard has something to do --- */
+  // Three recent uploads left awaiting review, so the admin queue is not empty.
+  const awaitingReview = pickN(products, 3);
+  for (const p of awaitingReview) {
+    await Product.updateOne(
+      { _id: p._id },
+      { $set: { approvalStatus: 'PENDING', submittedAt: daysBack(intBetween(0, 2)), reviewedAt: null } }
+    );
+  }
+  for (const admin2 of [admin]) {
+    await Notification.create({
+      recipient: admin2._id,
+      audience: 'ADMIN',
+      title: `${awaitingReview.length} products awaiting review`,
+      body: 'Sellers have submitted new products for approval.',
+      icon: 'box',
+      type: 'GENERAL',
+      link: '/admin/products?approval=PENDING',
+      createdAt: daysBack(0),
+    });
+  }
+
   const lowStockPicks = pickN(products, 6);
   for (const p of lowStockPicks) {
     await Product.updateOne({ _id: p._id }, { $set: { stock: intBetween(1, 4) } });
@@ -632,6 +656,7 @@ async function seed() {
   await Product.updateOne({ _id: pickN(products, 1)[0]._id }, { $set: { stock: 0 } });
 
   console.log(`   ${notifications.length} notifications, ${reminders.length} gift reminders\n`);
+  console.log(`   ${awaitingReview.length} products awaiting admin approval`);
 
   console.log('   ─────────────────────────────────────────────');
   console.log('   Seed complete.\n');

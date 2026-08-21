@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api.js';
 import { toast } from '../../store/toastStore.js';
 import { PageHeader, PanelCard, DataTable, SearchInput, FilterTabs } from '../../components/common/panel.jsx';
@@ -21,8 +21,17 @@ const FILTERS = [
   ['inactive', 'Hidden'],
 ];
 
+/** Where a product sits in the admin review queue. */
+const APPROVAL = {
+  APPROVED: { tone: 'green', label: 'Approved' },
+  PENDING: { tone: 'amber', label: 'In review' },
+  REJECTED: { tone: 'red', label: 'Changes needed' },
+};
+
 export default function SellerProducts() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const approval = params.get('approval') || '';
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
@@ -33,7 +42,7 @@ export default function SellerProducts() {
     setLoading(true);
     try {
       const { data: d } = await api.get('/seller/products', {
-        params: { q: q || undefined, status: status || undefined, page, limit: 20 },
+        params: { q: q || undefined, status: status || undefined, approval: approval || undefined, page, limit: 20 },
       });
       setData(d);
     } catch {
@@ -46,7 +55,7 @@ export default function SellerProducts() {
   useEffect(() => {
     const t = setTimeout(load, q ? 300 : 0);
     return () => clearTimeout(t);
-  }, [q, status, page]);
+  }, [q, status, approval, page]);
 
   async function toggleActive(product) {
     try {
@@ -126,6 +135,21 @@ export default function SellerProducts() {
       ),
     },
     {
+      key: 'approvalStatus',
+      header: 'Review',
+      render: (p) => {
+        const a = APPROVAL[p.approvalStatus] || APPROVAL.PENDING;
+        return (
+          <div>
+            <Badge tone={a.tone}>{a.label}</Badge>
+            {p.approvalStatus === 'REJECTED' && p.approvalNote && (
+              <p className="mt-1 max-w-[16rem] text-[11px] leading-snug text-[#B3261E]">{p.approvalNote}</p>
+            )}
+          </div>
+        );
+      },
+    },
+    {
       key: 'isActive',
       header: 'Status',
       render: (p) => (
@@ -198,6 +222,9 @@ export default function SellerProducts() {
                     {p.stock === 0 ? 'Out of stock' : `${p.stock} left`}
                   </Badge>
                   <Badge tone={p.isActive ? 'green' : 'neutral'} className="!text-[10px]">{p.isActive ? 'Live' : 'Hidden'}</Badge>
+                  <Badge tone={(APPROVAL[p.approvalStatus] || APPROVAL.PENDING).tone} className="!text-[10px]">
+                    {(APPROVAL[p.approvalStatus] || APPROVAL.PENDING).label}
+                  </Badge>
                   <DeliveryBadge tier={p.baseTier} meta={TIER_META[p.baseTier]} />
                 </div>
               </div>

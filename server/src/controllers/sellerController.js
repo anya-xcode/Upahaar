@@ -29,6 +29,7 @@ export const dashboard = asyncHandler(async (req, res) => {
     cancelledOrders,
     productCount,
     activeProducts,
+    pendingApproval,
     lowStock,
     outOfStock,
     pendingCommission,
@@ -42,7 +43,8 @@ export const dashboard = asyncHandler(async (req, res) => {
     Order.countDocuments({ sellers: sellerId, status: ORDER_STATUS.DELIVERED }),
     Order.countDocuments({ sellers: sellerId, status: ORDER_STATUS.CANCELLED }),
     Product.countDocuments({ seller: sellerId }),
-    Product.countDocuments({ seller: sellerId, isActive: true }),
+    Product.countDocuments({ seller: sellerId, isActive: true, approvalStatus: 'APPROVED' }),
+    Product.countDocuments({ seller: sellerId, approvalStatus: 'PENDING' }),
     Product.countDocuments({ seller: sellerId, $expr: { $and: [{ $gt: ['$stock', 0] }, { $lte: ['$stock', '$lowStockThreshold'] }] } }),
     Product.countDocuments({ seller: sellerId, stock: 0 }),
     Commission.aggregate([
@@ -96,6 +98,7 @@ export const dashboard = asyncHandler(async (req, res) => {
       cancelledOrders,
       productCount,
       activeProducts,
+      pendingApproval,
       lowStock,
       outOfStock,
       pendingEarnings: money(pendingCommission[0]?.earning || 0),
@@ -191,6 +194,7 @@ export const listProducts = asyncHandler(async (req, res) => {
   if (req.query.tier) filter.baseTier = req.query.tier;
   if (req.query.status === 'active') filter.isActive = true;
   if (req.query.status === 'inactive') filter.isActive = false;
+  if (req.query.approval) filter.approvalStatus = req.query.approval;
   if (req.query.stock === 'low') filter.$expr = { $and: [{ $gt: ['$stock', 0] }, { $lte: ['$stock', '$lowStockThreshold'] }] };
   if (req.query.stock === 'out') filter.stock = 0;
 
@@ -219,6 +223,21 @@ export const createProduct = asyncHandler(async (req, res) => {
     seller: req.seller._id,
     slug: await uniqueSlug(Product, name),
     baseTier: req.body.baseTier || DELIVERY_TIERS.NEXT_DAY,
+    // Sellers cannot publish straight to the storefront — an admin reviews
+    // first. The seller keeps full visibility of it in their own panel.
+    approvalStatus: 'PENDING',
+    approvalNote: undefined,
+    submittedAt: new Date(),
+    reviewedAt: undefined,
+  });
+
+  await notifyAdmins({
+    title: 'New product awaiting review',
+    body: `${req.seller.businessName} submitted "${product.name}".`,
+    icon: 'box',
+    type: 'GENERAL',
+    link: '/admin/products?approval=PENDING',
+    meta: { productId: product._id },
   });
 
   await InventoryLog.create({
@@ -240,10 +259,28 @@ export const updateProduct = asyncHandler(async (req, res) => {
   if (!product) throw new ApiError(404, 'Product not found');
 
   const previousStock = product.stock;
-  const blocked = ['seller', 'slug', 'rating', 'reviewCount', 'soldCount'];
+  // A seller can never set their own approval state.
+  const blocked = ['seller', 'slug', 'rating', 'reviewCount', 'soldCount', 'approvalStatus', 'approvalNote', 'reviewedAt'];
+
+  /**
+   * Changing what the customer *reads* re-opens review; changing price, stock
+   * or availability does not. Re-reviewing a price change would make routine
+   * trading painful for no safety benefit.
+   */
+  const REVIEWABLE = ['name', 'description', 'images', 'highlights'];
+  const contentChanged = REVIEWABLE.some(
+    (f) => req.body[f] !== undefined && JSON.stringify(req.body[f]) !== JSON.stringify(product[f])
+  );
+
   Object.keys(req.body).forEach((key) => {
     if (!blocked.includes(key)) product[key] = req.body[key];
   });
+
+  if (contentChanged && product.approvalStatus === 'APPROVED') {
+    product.approvalStatus = 'PENDING';
+    product.submittedAt = new Date();
+    product.reviewedAt = undefined;
+  }
 
   if (req.body.name && req.body.name !== product.name) {
     product.slug = await uniqueSlug(Product, req.body.name, product._id);

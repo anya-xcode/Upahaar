@@ -63,9 +63,10 @@ export const getWishlist = asyncHandler(async (req, res) => {
   });
 
   const { pincodeDoc, zone } = await resolveLocation(req.query.pincode || req.user.defaultPincode);
-  const products = (wishlist?.products || []).map((p) =>
-    attachAvailability(p, { seller: p.seller, pincodeDoc, zone })
-  );
+  // A product pulled from a wishlist still has to pass the same gates.
+  const products = (wishlist?.products || [])
+    .filter((p) => p.isActive && p.approvalStatus === 'APPROVED')
+    .map((p) => attachAvailability(p, { seller: p.seller, pincodeDoc, zone }));
 
   res.json({ success: true, products });
 });

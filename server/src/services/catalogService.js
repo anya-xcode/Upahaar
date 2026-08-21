@@ -17,9 +17,15 @@ export async function resolveLocation(pincode) {
   return { pincodeDoc, zone };
 }
 
-/** Translates the query string filters into a Mongo query. */
+/**
+ * Translates the query string filters into a Mongo query.
+ *
+ * Every storefront listing starts from the same two gates: the seller has the
+ * product switched on, and an admin has approved it. Nothing unreviewed can
+ * reach a shopper through any surface that uses this.
+ */
 function buildMongoQuery(query) {
-  const filter = { isActive: true };
+  const filter = { isActive: true, approvalStatus: 'APPROVED' };
 
   if (query.category) filter.category = query.category;
   if (query.occasion) filter.occasions = query.occasion;

@@ -11,6 +11,7 @@ import Product from '../models/Product.js';
 import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import { notifySeller } from '../services/notificationService.js';
 import { ApiError } from '../utils/ApiError.js';
 import { uniqueSlug, paginate } from '../utils/helpers.js';
 
@@ -254,6 +255,7 @@ export const listAllProducts = asyncHandler(async (req, res) => {
   if (req.query.seller) filter.seller = req.query.seller;
   if (req.query.category) filter.category = req.query.category;
   if (req.query.isActive !== undefined) filter.isActive = req.query.isActive === 'true';
+  if (req.query.approval) filter.approvalStatus = req.query.approval;
 
   const [products, total] = await Promise.all([
     Product.find(filter)
@@ -266,7 +268,58 @@ export const listAllProducts = asyncHandler(async (req, res) => {
     Product.countDocuments(filter),
   ]);
 
-  res.json({ success: true, products, total, page, pages: Math.ceil(total / limit) });
+  const counts = await Product.aggregate([{ $group: { _id: '$approvalStatus', count: { $sum: 1 } } }]);
+
+  res.json({
+    success: true,
+    products,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+    counts: Object.fromEntries(counts.map((c) => [c._id, c.count])),
+  });
+});
+
+/**
+ * PATCH /api/admin/products/:id/approval
+ *
+ * The review gate. Approving publishes the product to the storefront;
+ * rejecting keeps it invisible to shoppers but leaves it editable by its
+ * seller, who is told why.
+ */
+export const reviewProduct = asyncHandler(async (req, res) => {
+  const { approvalStatus, note } = req.body;
+  if (!['PENDING', 'APPROVED', 'REJECTED'].includes(approvalStatus)) {
+    throw new ApiError(400, 'Unknown approval status');
+  }
+  if (approvalStatus === 'REJECTED' && !note?.trim()) {
+    throw new ApiError(400, 'Tell the seller why it was rejected');
+  }
+
+  const product = await Product.findById(req.params.id).populate('seller', 'user businessName');
+  if (!product) throw new ApiError(404, 'Product not found');
+
+  product.approvalStatus = approvalStatus;
+  product.approvalNote = note;
+  product.reviewedAt = new Date();
+  await product.save();
+
+  if (product.seller?.user) {
+    const copy = {
+      APPROVED: { title: 'Product approved', body: `"${product.name}" is now live on the store.`, icon: 'check' },
+      REJECTED: { title: 'Product needs changes', body: note || `"${product.name}" was not approved.`, icon: 'warning' },
+      PENDING: { title: 'Product back under review', body: `"${product.name}" is being reviewed again.`, icon: 'box' },
+    }[approvalStatus];
+
+    await notifySeller(product.seller.user, {
+      ...copy,
+      type: 'GENERAL',
+      link: '/seller/products',
+      meta: { productId: product._id },
+    });
+  }
+
+  res.json({ success: true, product });
 });
 
 /** PATCH /api/admin/products/:id — admin can only flag/unflag, not edit content. */

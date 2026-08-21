@@ -56,7 +56,7 @@ export const filterOptions = asyncHandler(async (_req, res) => {
 
 /** GET /api/products/:slug — product detail, resolved for the customer's pincode. */
 export const getProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findOne({ slug: req.params.slug, isActive: true })
+  const product = await Product.findOne({ slug: req.params.slug, isActive: true, approvalStatus: 'APPROVED' })
     .populate('seller')
     .populate('category', 'name slug icon')
     .populate('occasions', 'name slug icon');
@@ -95,7 +95,7 @@ export const suggest = asyncHandler(async (req, res) => {
   if (q.length < 2) return res.json({ success: true, suggestions: [] });
 
   const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-  const products = await Product.find({ isActive: true, $or: [{ name: rx }, { tags: rx }] })
+  const products = await Product.find({ isActive: true, approvalStatus: 'APPROVED', $or: [{ name: rx }, { tags: rx }] })
     .select('name slug images price')
     .limit(8)
     .lean();

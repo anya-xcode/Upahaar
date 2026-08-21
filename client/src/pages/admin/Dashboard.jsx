@@ -62,13 +62,16 @@ export default function AdminDashboard() {
       />
 
       {/* Action queue */}
-      {(stats.pendingSellers > 0 || stats.pendingKyc > 0 || stats.pendingReviews > 0) && (
-        <div className="grid gap-3 sm:grid-cols-3">
+      {(stats.pendingSellers > 0 || stats.pendingKyc > 0 || stats.pendingProducts > 0 || stats.pendingReviews > 0) && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {stats.pendingSellers > 0 && (
             <ActionTile to="/admin/sellers?status=PENDING" icon={Store} tone="rose" title={`${stats.pendingSellers} seller application(s)`} sub="Waiting for approval" />
           )}
           {stats.pendingKyc > 0 && (
             <ActionTile to="/admin/sellers?kyc=PENDING" icon={Shield} tone="gold" title={`${stats.pendingKyc} KYC submission(s)`} sub="Documents to verify" />
+          )}
+          {stats.pendingProducts > 0 && (
+            <ActionTile to="/admin/products?approval=PENDING" icon={Grid} tone="rose" title={`${stats.pendingProducts} product(s) to review`} sub="Submitted by sellers" />
           )}
           {stats.pendingReviews > 0 && (
             <ActionTile to="/admin/reviews?status=PENDING" icon={Star} tone="blue" title={`${stats.pendingReviews} review(s) flagged`} sub="Awaiting moderation" />
@@ -87,7 +90,7 @@ export default function AdminDashboard() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={Users} label="Customers" value={stats.totalUsers} sub="registered" to="/admin/users" tone="blue" />
         <StatCard icon={Store} label="Sellers" value={stats.totalSellers} sub={`${stats.activeSellers} active`} to="/admin/sellers" tone="rose" />
-        <StatCard icon={Grid} label="Active products" value={stats.activeProducts} sub="live on the store" to="/admin/products" tone="ink" />
+        <StatCard icon={Grid} label="Live products" value={stats.activeProducts} sub={`${stats.pendingProducts || 0} awaiting review`} to="/admin/products" tone="ink" />
         <StatCard icon={Warning} label="Pending approvals" value={stats.pendingSellers + stats.pendingKyc} sub="sellers + KYC" tone="gold" to="/admin/sellers" />
       </div>
 
