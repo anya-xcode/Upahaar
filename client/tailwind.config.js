@@ -4,38 +4,48 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Light premium gifting palette — warm cream ground, rose primary,
-        // muted gold accent, deep plum ink.
-        cream: '#FFFBF8',
-        blush: '#FFF4F6',
+        /**
+         * Light premium palette.
+         *
+         * The ground is a warm ivory rather than white, and `blush` — the
+         * workhorse tint behind cards, chips and table rows — is deliberately
+         * almost neutral. Colour is spent on the primary, not on surfaces;
+         * that restraint is most of what separates "premium" from "playful".
+         *
+         * The primary is a deep claret rose rather than a bright pink: still
+         * warm and unmistakably gifting, but it holds white text at 5.6:1 and
+         * doesn't shout.
+         */
+        cream: '#FFFCF9',
+        blush: '#FAF5F2',
         rose: {
-          50: '#FFF1F5',
-          100: '#FFE3EA',
-          200: '#FFC9D7',
-          300: '#FBA0B8',
-          400: '#F16E92',
-          500: '#DE4A75',
-          600: '#C42F5C',
-          700: '#A32149',
-          800: '#7D1839',
-          900: '#5C0F28',
+          50: '#FCF4F6',
+          100: '#F6E7EC',
+          200: '#EACBD6',
+          300: '#D8A2B6',
+          400: '#C07691',
+          500: '#A94A6C',
+          600: '#8E3958',
+          700: '#742D48',
+          800: '#572236',
+          900: '#3D1726',
         },
         gold: {
-          50: '#FDF8EC',
-          100: '#F8EDD1',
-          200: '#EFD79B',
-          300: '#E2BE66',
-          400: '#CFA23C',
-          500: '#B4862A',
-          600: '#8F6820',
+          50: '#FBF7EC',
+          100: '#F3EAD2',
+          200: '#E4D3A0',
+          300: '#CFB671',
+          400: '#B39546',
+          500: '#927733',
+          600: '#6F5B27',
         },
         ink: {
-          DEFAULT: '#2E1B2B',
-          soft: '#5C4A57',
-          muted: '#8A7A85',
-          faint: '#B5A8B0',
+          DEFAULT: '#241A20',
+          soft: '#4C3F46',
+          muted: '#7B6D75',
+          faint: '#A99CA3',
         },
-        line: '#F2E6EA',
+        line: '#EDE3DF',
       },
       fontFamily: {
         display: ['Fraunces', 'Georgia', 'serif'],
@@ -46,9 +56,13 @@ export default {
         '4xl': '2rem',
       },
       boxShadow: {
-        soft: '0 1px 2px rgba(46,27,43,0.04), 0 8px 24px -12px rgba(46,27,43,0.12)',
-        lift: '0 2px 4px rgba(46,27,43,0.04), 0 18px 40px -18px rgba(46,27,43,0.22)',
-        glow: '0 10px 40px -12px rgba(222,74,117,0.35)',
+        // Shadows are warm-tinted and shallow — a premium surface sits on the
+        // page rather than floating above it.
+        soft: '0 1px 2px rgba(36,26,32,0.04), 0 6px 18px -12px rgba(36,26,32,0.14)',
+        lift: '0 1px 3px rgba(36,26,32,0.05), 0 18px 36px -20px rgba(36,26,32,0.20)',
+        glow: '0 8px 22px -10px rgba(169,74,108,0.38)',
+        mark: '0 2px 8px -3px rgba(116,45,72,0.45)',
+        hairline: 'inset 0 0 0 1px rgba(36,26,32,0.05)',
       },
       keyframes: {
         'fade-up': {

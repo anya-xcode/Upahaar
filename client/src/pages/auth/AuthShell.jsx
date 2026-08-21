@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { ChevronLeft, Gift } from '../../components/common/Icons.jsx';
+import { ChevronLeft } from '../../components/common/Icons.jsx';
+import Logo from '../../components/common/BrandMark.jsx';
 import { resolveIcon } from '../../lib/glyphs.jsx';
 
 /**
@@ -24,12 +25,7 @@ export default function AuthShell({
     <div className="grid min-h-screen lg:grid-cols-[1fr_0.9fr]">
       {/* Form side */}
       <div className="flex flex-col bg-cream px-5 py-8 sm:px-10">
-        <Link to="/" className="mb-10 inline-flex items-center gap-2.5 self-start">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-rose-400 text-white shadow-glow">
-            <Gift size={19} />
-          </span>
-          <span className="font-display text-[21px] font-bold tracking-tight text-ink">Upahaar</span>
-        </Link>
+        <Logo className="mb-10 self-start" showTagline={false} />
 
         <div className={`mx-auto flex w-full flex-1 flex-col justify-center ${wide ? 'max-w-xl' : 'max-w-sm'}`}>
           <h1 className="font-display text-3xl font-semibold text-ink">{title}</h1>

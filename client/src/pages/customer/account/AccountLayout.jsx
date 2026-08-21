@@ -44,7 +44,7 @@ export default function AccountLayout() {
         {/* Sidebar */}
         <aside className="lg:sticky lg:top-[190px] lg:self-start">
           <div className="card mb-4 flex items-center gap-3.5 p-5">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-rose-400 text-base font-bold text-white">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-rose-700 text-base font-bold text-white">
               {initials(user?.name)}
             </span>
             <div className="min-w-0">

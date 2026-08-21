@@ -1,15 +1,13 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../store/authStore.js';
 import { Spinner } from './ui.jsx';
-import { Gift } from './Icons.jsx';
+import { BrandTile } from './BrandMark.jsx';
 
 function Booting() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-cream">
       <div className="text-center">
-        <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-rose-400 text-white shadow-glow">
-          <Gift size={26} />
-        </span>
+        <BrandTile size={54} className="mb-5 !rounded-2xl" />
         <div className="flex items-center justify-center gap-2 text-sm text-ink-muted">
           <Spinner size={15} className="text-rose-400" /> Getting things ready…
         </div>

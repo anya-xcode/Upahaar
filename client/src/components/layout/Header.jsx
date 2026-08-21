@@ -5,26 +5,11 @@ import { useAuth } from '../../store/authStore.js';
 import { useShop } from '../../store/shopStore.js';
 import { useLocation as useLocationStore } from '../../store/locationStore.js';
 import { Img } from '../common/ui.jsx';
+import Logo from '../common/BrandMark.jsx';
 import { inr, initials } from '../../lib/format.js';
 import {
   Search, MapPin, Heart, Cart, User, ChevronDown, Menu, Close, Gift, Store, Shield, Logout, Bell, Grid, Bolt,
 } from '../common/Icons.jsx';
-
-function Logo({ className = '' }) {
-  return (
-    <Link to="/" className={`flex items-center gap-2.5 ${className}`}>
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-rose-400 text-white shadow-glow">
-        <Gift size={19} />
-      </span>
-      <span className="leading-none">
-        <span className="block font-display text-[21px] font-bold tracking-tight text-ink">Upahaar</span>
-        <span className="hidden text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-500 sm:block">
-          Gifts near you
-        </span>
-      </span>
-    </Link>
-  );
-}
 
 export default function Header() {
   const navigate = useNavigate();

@@ -285,8 +285,8 @@ export function PanelShell({ nav, brand, accent = 'rose', children, homeLink = '
   const [open, setOpen] = useState(false);
 
   const accents = {
-    rose: { badge: 'from-rose-500 to-rose-400', active: 'bg-rose-50 text-rose-700' },
-    ink: { badge: 'from-ink to-[#4A2E42]', active: 'bg-blush text-ink' },
+    rose: { badge: 'from-rose-500 to-rose-700', active: 'bg-rose-50 text-rose-700' },
+    ink: { badge: 'from-ink to-[#4C3F46]', active: 'bg-blush text-ink' },
   };
   const a = accents[accent] || accents.rose;
   const BrandIcon = resolveIcon(brand.icon);
@@ -300,7 +300,7 @@ export function PanelShell({ nav, brand, accent = 'rose', children, homeLink = '
   const sidebar = (
     <div className="flex h-full flex-col">
       <Link to={brand.to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-5 py-5">
-        <span className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${a.badge} text-white shadow-glow`}>
+        <span className={`flex h-9 w-9 items-center justify-center rounded-[0.7rem] bg-gradient-to-br ${a.badge} text-white shadow-mark`}>
           <BrandIcon size={19} />
         </span>
         <span className="min-w-0 leading-tight">

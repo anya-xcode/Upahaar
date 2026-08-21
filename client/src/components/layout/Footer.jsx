@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../lib/api.js';
 import { toast } from '../../store/toastStore.js';
-import { Mail, Bolt, Shield, Truck, Store, Gift } from '../common/Icons.jsx';
+import { Mail, Bolt, Shield, Truck, Store } from '../common/Icons.jsx';
+import Logo from '../common/BrandMark.jsx';
 
 const COLUMNS = [
   {
@@ -106,10 +107,7 @@ export default function Footer() {
       {/* Links */}
       <div className="container-app grid gap-10 py-14 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div>
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-rose-400 text-white"><Gift size={19} /></span>
-            <span className="font-display text-[21px] font-bold text-ink">Upahaar</span>
-          </div>
+          <Logo showTagline={false} />
           <p className="mt-4 max-w-xs font-display text-lg italic leading-snug text-ink-soft">
             "Don't just send a gift. Send a moment."
           </p>

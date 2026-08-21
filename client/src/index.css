@@ -10,12 +10,23 @@
 
   body {
     @apply bg-cream text-ink font-sans antialiased;
+    /* Real typographic niceties: proper ligatures and old-style spacing. */
+    font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+    text-rendering: optimizeLegibility;
   }
 
   /* Display type carries the "premium" half of the brand; body type carries
      the "trustworthy" half. Keep the two roles distinct. */
   h1, h2, h3 {
-    @apply font-display tracking-tight;
+    @apply font-display;
+    letter-spacing: -0.021em;
+    font-optical-sizing: auto;
+  }
+
+  /* Figures line up in tables, price columns and dashboard tiles. */
+  table, .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
   }
 
   ::selection {
@@ -43,7 +54,7 @@
 
   /* Firefox */
   * {
-    scrollbar-color: #FFC9D7 #FFF4F6;
+    scrollbar-color: #EACBD6 #FAF5F2;
     scrollbar-width: thin;
   }
 }
@@ -57,22 +68,25 @@
     @apply rounded-xl2 border border-line bg-white shadow-soft;
   }
 
+  /* Buttons sit on a slightly tighter, more considered rhythm than the
+     default — restrained hover, no bounce. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold
-           transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400
-           focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13.5px] font-semibold
+           tracking-[0.005em] transition-all duration-200 focus:outline-none focus-visible:ring-2
+           focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-cream
+           disabled:cursor-not-allowed disabled:opacity-45;
   }
   .btn-primary {
-    @apply btn bg-rose-500 text-white hover:bg-rose-600 hover:shadow-glow active:scale-[0.98];
+    @apply btn bg-rose-500 text-white shadow-glow hover:bg-rose-600 hover:shadow-lift;
   }
   .btn-ghost {
-    @apply btn border border-line bg-white text-ink hover:border-rose-200 hover:bg-rose-50;
+    @apply btn border border-line bg-white text-ink hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700;
   }
   .btn-dark {
-    @apply btn bg-ink text-white hover:bg-ink-soft active:scale-[0.98];
+    @apply btn bg-ink text-white hover:bg-ink-soft;
   }
   .btn-sm {
-    @apply px-3.5 py-1.5 text-xs;
+    @apply px-3.5 py-1.5 text-[12px];
   }
 
   .input {
@@ -81,7 +95,7 @@
            focus:ring-4 focus:ring-rose-50 transition;
   }
   .label {
-    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-muted;
+    @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.13em] text-ink-muted;
   }
 
   .chip {
@@ -89,7 +103,19 @@
   }
 
   .section-title {
-    @apply font-display text-2xl font-semibold text-ink sm:text-[28px];
+    @apply font-display text-[26px] font-semibold text-ink sm:text-[30px];
+    letter-spacing: -0.024em;
+  }
+
+  /* The small letterspaced caps above a section heading. */
+  .eyebrow {
+    @apply text-[10.5px] font-bold uppercase tracking-[0.2em] text-rose-500;
+  }
+
+  /* A hairline rule that fades out — used to close sections without a hard line. */
+  .rule-fade {
+    @apply h-px w-full border-0;
+    background: linear-gradient(90deg, theme('colors.line'), transparent);
   }
 
   /* Loading placeholder used by every list before its data lands. */

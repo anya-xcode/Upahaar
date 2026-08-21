@@ -58,7 +58,7 @@ export default function Profile() {
 
       <section className="card p-6">
         <div className="mb-6 flex items-center gap-4">
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-rose-400 text-xl font-bold text-white">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-rose-700 text-xl font-bold text-white">
             {initials(user?.name)}
           </span>
           <div>
