@@ -94,4 +94,28 @@ productSchema.virtual('isLowStock').get(function isLowStock() {
 
 productSchema.index({ name: 'text', description: 'text', tags: 'text' });
 
+/**
+ * Indexes are shaped around the two halves of the catalogue query.
+ *
+ * The leading keys are always the storefront gates, because every listing
+ * starts from them; the trailing key is the sort, so Mongo can walk the index
+ * instead of sorting in memory.
+ */
+
+// LOCAL half — products from the sellers who cover a pincode.
+productSchema.index({ isActive: 1, approvalStatus: 1, seller: 1, stock: 1 });
+
+// SHIPPED half — everything non-perishable, sorted by each supported ordering.
+productSchema.index({ isActive: 1, approvalStatus: 1, isPerishable: 1, stock: 1, soldCount: -1 });
+productSchema.index({ isActive: 1, approvalStatus: 1, isPerishable: 1, stock: 1, price: 1 });
+productSchema.index({ isActive: 1, approvalStatus: 1, isPerishable: 1, stock: 1, createdAt: -1 });
+productSchema.index({ isActive: 1, approvalStatus: 1, isPerishable: 1, stock: 1, rating: -1 });
+
+// Faceted browsing.
+productSchema.index({ category: 1, isActive: 1, approvalStatus: 1 });
+productSchema.index({ occasions: 1, isActive: 1, approvalStatus: 1 });
+
+// The admin review queue.
+productSchema.index({ approvalStatus: 1, submittedAt: -1 });
+
 export default mongoose.model('Product', productSchema);

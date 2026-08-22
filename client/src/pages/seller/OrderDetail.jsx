@@ -7,6 +7,7 @@ import OrderTimeline from '../../components/customer/OrderTimeline.jsx';
 import { OrderStatusBadge } from '../customer/account/AccountHome.jsx';
 import { Img, Badge, DeliveryBadge, Skeleton, EmptyState, Spinner } from '../../components/common/ui.jsx';
 import { ChevronLeft, MapPin, Phone, Gift, Refresh } from '../../components/common/Icons.jsx';
+import { TIER_BADGES } from '../../lib/glyphs.jsx';
 import { inr, formatDateTime } from '../../lib/format.js';
 
 const NEXT_STEP = {
@@ -16,14 +17,6 @@ const NEXT_STEP = {
   READY_FOR_PICKUP: { status: 'PICKED_UP', label: 'Mark Picked Up' },
   PICKED_UP: { status: 'OUT_FOR_DELIVERY', label: 'Out for Delivery' },
   OUT_FOR_DELIVERY: { status: 'DELIVERED', label: 'Mark Delivered' },
-};
-
-/** Badge text only — DeliveryBadge supplies the glyph from the tier key. */
-const TIER_META = {
-  EXPRESS_60: { badge: '60 MIN' },
-  PRIORITY_3H: { badge: '3 HOURS' },
-  NEXT_DAY: { badge: 'TOMORROW' },
-  STANDARD_2_3D: { badge: '2–3 DAYS' },
 };
 
 export default function SellerOrderDetail() {
@@ -114,7 +107,7 @@ export default function SellerOrderDetail() {
           <span className="flex flex-wrap items-center gap-3">
             {order.orderId}
             <OrderStatusBadge status={order.status} />
-            <DeliveryBadge tier={order.deliveryTier} meta={TIER_META[order.deliveryTier]} />
+            <DeliveryBadge tier={order.deliveryTier} meta={TIER_BADGES[order.deliveryTier]} />
           </span>
         }
         subtitle={`Placed ${formatDateTime(order.createdAt)}`}
@@ -216,7 +209,7 @@ export default function SellerOrderDetail() {
 
           <PanelCard title="Delivery slot">
             <div className="space-y-2 text-[13px]">
-              <Row label="Tier" value={TIER_META[order.deliveryTier]?.badge} />
+              <Row label="Tier" value={TIER_BADGES[order.deliveryTier]?.badge} />
               {order.deliverySlot?.window && <Row label="Window" value={order.deliverySlot.window} />}
               <Row label="Estimated" value={formatDateTime(order.estimatedDeliveryAt)} />
               {order.deliveredAt && <Row label="Delivered" value={formatDateTime(order.deliveredAt)} />}

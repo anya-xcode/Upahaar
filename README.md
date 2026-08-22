@@ -367,6 +367,64 @@ middleware.
 
 ---
 
+## Scale and maintenance
+
+### How the catalogue query scales
+
+A tier depends on (product, seller, pincode, clock), which no Mongo filter can
+express — but *deliverability* almost entirely can. For any pincode the catalogue
+splits in two:
+
+| | What it is | How it is handled |
+|---|---|---|
+| **LOCAL** | Sellers covering the pincode, inside their radius | Bounded by that seller set — loaded and classified |
+| **SHIPPED** | Everything else non-perishable | Always `STANDARD_2_3D`, so counted, sorted and paged **inside Mongo** |
+
+The halves are merged as two sorted streams, reading only as deep as the
+requested page. Measured at 5,000 products in one city:
+
+| | Before | After |
+|---|---|---|
+| Homepage feed | 110 ms | **64 ms** |
+| Listing | 37 ms | 65 ms |
+| PIN code check | 56 ms | **41 ms** |
+| Products actually considered | **105 of 457** | **457 of 457** |
+
+The listing got slower because it got *correct*: an internal `.limit(600)` used
+to silently truncate the catalogue, so the old number was fast and wrong. The
+homepage got faster because the feed ran four independent scans of the same
+local set and now runs one (`buildFeed`).
+
+Also in place: compound indexes shaped to those two query halves, and a small
+TTL cache (`utils/cache.js`) over pincode and seller-coverage lookups, which sit
+on every catalogue request and change a few times a day.
+
+**The next order of magnitude** is a precomputed seller×pincode coverage
+collection. The seam is `loadLocal` in `catalogService.js`; it logs a warning if
+the local scan cap is ever reached rather than truncating silently.
+
+### Maintenance
+
+```bash
+npm run verify      # lint + test + build — what CI runs
+npm run lint        # ESLint across both workspaces
+npm run test        # 40 tests
+```
+
+- **40 tests.** `deliveryEngine.test.js` covers the engine as pure functions —
+  every gate, every degradation path, with the clock pinned. `catalogue.test.js`
+  runs against a real MongoDB (`upahaar_test`, dropped after) and covers
+  visibility gates, tiers, filters, and pagination over a 900-product catalogue.
+- **ESLint** is configured for the bug class that actually shipped here once: an
+  identifier used but never imported, which Rollup compiles happily and the
+  browser throws on. Zero errors; warnings are advisory.
+- **CI** runs lint, tests against a real Mongo service, the build, and checks the
+  Delhi coverage map has been regenerated.
+- Tier badge text lives once in `client/src/lib/glyphs.jsx` — six panel files
+  used to each carry a copy.
+
+---
+
 ## What's implemented
 
 **Customer** — PIN-code discovery, tier-grouped homepage (17 sections), search with typeahead,

@@ -5,15 +5,8 @@ import { toast } from '../../store/toastStore.js';
 import { PageHeader, PanelCard, DataTable, SearchInput, FilterTabs } from '../../components/common/panel.jsx';
 import { Img, Badge, DeliveryBadge, Pagination, EmptyState } from '../../components/common/ui.jsx';
 import { Plus, Edit, Trash, Star } from '../../components/common/Icons.jsx';
+import { TIER_BADGES } from '../../lib/glyphs.jsx';
 import { inr } from '../../lib/format.js';
-
-/** Badge text only — DeliveryBadge supplies the glyph from the tier key. */
-const TIER_META = {
-  EXPRESS_60: { badge: '60 MIN' },
-  PRIORITY_3H: { badge: '3 HOURS' },
-  NEXT_DAY: { badge: 'TOMORROW' },
-  STANDARD_2_3D: { badge: '2–3 DAYS' },
-};
 
 const FILTERS = [
   ['', 'All'],
@@ -119,7 +112,7 @@ export default function SellerProducts() {
       header: 'Delivery',
       render: (p) => (
         <div>
-          <DeliveryBadge tier={p.baseTier} meta={TIER_META[p.baseTier]} />
+          <DeliveryBadge tier={p.baseTier} meta={TIER_BADGES[p.baseTier]} />
           <p className="mt-1 text-[11px] text-ink-faint">{p.prepTimeMinutes} min prep</p>
         </div>
       ),
@@ -225,7 +218,7 @@ export default function SellerProducts() {
                   <Badge tone={(APPROVAL[p.approvalStatus] || APPROVAL.PENDING).tone} className="!text-[10px]">
                     {(APPROVAL[p.approvalStatus] || APPROVAL.PENDING).label}
                   </Badge>
-                  <DeliveryBadge tier={p.baseTier} meta={TIER_META[p.baseTier]} />
+                  <DeliveryBadge tier={p.baseTier} meta={TIER_BADGES[p.baseTier]} />
                 </div>
               </div>
             </div>

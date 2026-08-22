@@ -191,3 +191,17 @@ export function NotificationGlyph({ icon, size = 18, className = '' }) {
   const Icon = notificationIcon(icon);
   return <Icon size={size} className={className} />;
 }
+
+/**
+ * Tier badge text for panel tables.
+ *
+ * The storefront gets this from the API (`product.tierMeta`), but the seller
+ * and admin tables render tiers they have not fetched availability for. This is
+ * the single source for those — six panel files each had their own copy.
+ */
+export const TIER_BADGES = {
+  EXPRESS_60: { badge: '60 MIN' },
+  PRIORITY_3H: { badge: '3 HOURS' },
+  NEXT_DAY: { badge: 'TOMORROW' },
+  STANDARD_2_3D: { badge: '2–3 DAYS' },
+};

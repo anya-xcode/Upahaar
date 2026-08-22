@@ -4,7 +4,7 @@ import Seller from '../models/Seller.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { paginate } from '../utils/helpers.js';
-import { queryProducts, groupByTier, resolveLocation } from '../services/catalogService.js';
+import { queryProducts, buildFeed, resolveLocation } from '../services/catalogService.js';
 import { attachAvailability } from '../services/deliveryEngine.js';
 import { PRICE_BUCKETS, SORT_OPTIONS, TIER_META, TIER_ORDER } from '../utils/constants.js';
 
@@ -22,24 +22,9 @@ export const listProducts = asyncHandler(async (req, res) => {
  */
 export const productFeed = asyncHandler(async (req, res) => {
   const pincode = req.query.pincode || req.user?.defaultPincode;
-  const groups = await groupByTier({ pincode, perTier: Number(req.query.perTier) || 8 });
+  const feed = await buildFeed({ pincode, perTier: Number(req.query.perTier) || 8 });
 
-  const [featured, bestSellers, personalized] = await Promise.all([
-    queryProducts({ pincode, query: { featured: 'true', sort: 'popular' }, page: 1, limit: 8 }),
-    queryProducts({ pincode, query: { bestSeller: 'true', sort: 'popular' }, page: 1, limit: 8 }),
-    queryProducts({ pincode, query: { personalizable: 'true', sort: 'rating' }, page: 1, limit: 8 }),
-  ]);
-
-  res.json({
-    success: true,
-    pincode: pincode || null,
-    location: featured.location,
-    servesPincode: featured.servesPincode,
-    groups,
-    featured: featured.products,
-    bestSellers: bestSellers.products,
-    personalized: personalized.products,
-  });
+  res.json({ success: true, pincode: pincode || null, ...feed });
 });
 
 /** GET /api/products/filters — everything the filter rail needs to render. */

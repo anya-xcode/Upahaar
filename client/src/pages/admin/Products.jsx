@@ -5,6 +5,7 @@ import { toast } from '../../store/toastStore.js';
 import { PageHeader, PanelCard, DataTable, SearchInput, FilterTabs } from '../../components/common/panel.jsx';
 import { Img, Badge, DeliveryBadge, Pagination, EmptyState, Rating } from '../../components/common/ui.jsx';
 import { Sparkles, Star, Check, Close } from '../../components/common/Icons.jsx';
+import { TIER_BADGES } from '../../lib/glyphs.jsx';
 import { inr } from '../../lib/format.js';
 
 const FILTERS = [
@@ -26,13 +27,6 @@ const APPROVAL_FILTERS = [
   ['REJECTED', 'Rejected'],
   ['', 'All'],
 ];
-
-const TIER_META = {
-  EXPRESS_60: { badge: '60 MIN' },
-  PRIORITY_3H: { badge: '3 HOURS' },
-  NEXT_DAY: { badge: 'TOMORROW' },
-  STANDARD_2_3D: { badge: '2–3 DAYS' },
-};
 
 export default function AdminProducts() {
   const [params] = useSearchParams();
@@ -141,7 +135,7 @@ export default function AdminProducts() {
         return <Badge tone={a.tone}>{a.label}</Badge>;
       },
     },
-    { key: 'baseTier', header: 'Speed', render: (p) => <DeliveryBadge tier={p.baseTier} meta={TIER_META[p.baseTier]} /> },
+    { key: 'baseTier', header: 'Speed', render: (p) => <DeliveryBadge tier={p.baseTier} meta={TIER_BADGES[p.baseTier]} /> },
     { key: 'rating', header: 'Rating', render: (p) => <Rating value={p.rating} count={p.reviewCount} /> },
     {
       key: 'review',
@@ -244,7 +238,7 @@ export default function AdminProducts() {
                   <Badge tone={(APPROVAL[p.approvalStatus] || APPROVAL.PENDING).tone} className="!text-[10px]">
                     {(APPROVAL[p.approvalStatus] || APPROVAL.PENDING).label}
                   </Badge>
-                  <DeliveryBadge tier={p.baseTier} meta={TIER_META[p.baseTier]} />
+                  <DeliveryBadge tier={p.baseTier} meta={TIER_BADGES[p.baseTier]} />
                 </div>
               </div>
             </div>

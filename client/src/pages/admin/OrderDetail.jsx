@@ -7,6 +7,7 @@ import OrderTimeline from '../../components/customer/OrderTimeline.jsx';
 import { OrderStatusBadge } from '../customer/account/AccountHome.jsx';
 import { Img, Badge, DeliveryBadge, Skeleton, EmptyState } from '../../components/common/ui.jsx';
 import { ChevronLeft, MapPin, Gift, Rupee, Store, Users } from '../../components/common/Icons.jsx';
+import { TIER_BADGES } from '../../lib/glyphs.jsx';
 import { inr, formatDateTime } from '../../lib/format.js';
 
 const ORDER_FLOW = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'];
@@ -15,14 +16,6 @@ const LABELS = {
   READY_FOR_PICKUP: 'Ready for pickup', PICKED_UP: 'Picked up',
   OUT_FOR_DELIVERY: 'Out for delivery', DELIVERED: 'Delivered', CANCELLED: 'Cancelled',
 };
-/** Badge text only — DeliveryBadge supplies the glyph from the tier key. */
-const TIER_META = {
-  EXPRESS_60: { badge: '60 MIN' },
-  PRIORITY_3H: { badge: '3 HOURS' },
-  NEXT_DAY: { badge: 'TOMORROW' },
-  STANDARD_2_3D: { badge: '2–3 DAYS' },
-};
-
 export default function AdminOrderDetail() {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
@@ -90,7 +83,7 @@ export default function AdminOrderDetail() {
           <span className="flex flex-wrap items-center gap-3">
             {order.orderId}
             <OrderStatusBadge status={order.status} />
-            <DeliveryBadge tier={order.deliveryTier} meta={TIER_META[order.deliveryTier]} />
+            <DeliveryBadge tier={order.deliveryTier} meta={TIER_BADGES[order.deliveryTier]} />
           </span>
         }
         subtitle={`Placed ${formatDateTime(order.createdAt)}`}

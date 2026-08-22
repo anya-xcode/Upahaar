@@ -5,6 +5,7 @@ import { PageHeader, PanelCard, DataTable, SearchInput, FilterTabs } from '../..
 import { OrderStatusBadge } from '../customer/account/AccountHome.jsx';
 import { Badge, DeliveryBadge, Pagination, EmptyState } from '../../components/common/ui.jsx';
 import { MapPin, ChevronRight } from '../../components/common/Icons.jsx';
+import { TIER_BADGES } from '../../lib/glyphs.jsx';
 import { inr, formatDateTime } from '../../lib/format.js';
 
 const STATUS_FILTERS = [
@@ -23,14 +24,6 @@ const TIER_FILTERS = [
   ['NEXT_DAY', 'Tomorrow'],
   ['STANDARD_2_3D', '2–3 days'],
 ];
-
-/** Badge text only — DeliveryBadge supplies the glyph from the tier key. */
-const TIER_META = {
-  EXPRESS_60: { badge: '60 MIN' },
-  PRIORITY_3H: { badge: '3 HOURS' },
-  NEXT_DAY: { badge: 'TOMORROW' },
-  STANDARD_2_3D: { badge: '2–3 DAYS' },
-};
 
 export default function AdminOrders() {
   const navigate = useNavigate();
@@ -101,7 +94,7 @@ export default function AdminOrders() {
     {
       key: 'deliveryTier',
       header: 'Speed',
-      render: (o) => <DeliveryBadge tier={o.deliveryTier} meta={TIER_META[o.deliveryTier]} />,
+      render: (o) => <DeliveryBadge tier={o.deliveryTier} meta={TIER_BADGES[o.deliveryTier]} />,
     },
     { key: 'status', header: 'Status', render: (o) => <OrderStatusBadge status={o.status} /> },
     {
@@ -159,7 +152,7 @@ export default function AdminOrders() {
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <OrderStatusBadge status={o.status} />
-                <DeliveryBadge tier={o.deliveryTier} meta={TIER_META[o.deliveryTier]} />
+                <DeliveryBadge tier={o.deliveryTier} meta={TIER_BADGES[o.deliveryTier]} />
                 <Badge tone="neutral" className="!text-[10px]"><MapPin size={10} /> {o.shippingAddress?.pincode}</Badge>
               </div>
             </div>

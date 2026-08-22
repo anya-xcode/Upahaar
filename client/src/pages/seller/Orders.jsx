@@ -6,6 +6,7 @@ import { PageHeader, PanelCard, FilterTabs, SearchInput } from '../../components
 import { Img, Badge, DeliveryBadge, Pagination, EmptyState, Skeleton, Spinner } from '../../components/common/ui.jsx';
 import { OrderStatusBadge } from '../customer/account/AccountHome.jsx';
 import { MapPin, ChevronRight, Clock } from '../../components/common/Icons.jsx';
+import { TIER_BADGES } from '../../lib/glyphs.jsx';
 import { inr, formatDateTime, timeAgo } from '../../lib/format.js';
 
 const COLUMNS = [
@@ -28,14 +29,6 @@ const NEXT_STEP = {
   READY_FOR_PICKUP: { status: 'PICKED_UP', label: 'Mark Picked Up' },
   PICKED_UP: { status: 'OUT_FOR_DELIVERY', label: 'Out for Delivery' },
   OUT_FOR_DELIVERY: { status: 'DELIVERED', label: 'Mark Delivered' },
-};
-
-/** Badge text only — DeliveryBadge supplies the glyph from the tier key. */
-const TIER_META = {
-  EXPRESS_60: { badge: '60 MIN' },
-  PRIORITY_3H: { badge: '3 HOURS' },
-  NEXT_DAY: { badge: 'TOMORROW' },
-  STANDARD_2_3D: { badge: '2–3 DAYS' },
 };
 
 export default function SellerOrders() {
@@ -155,7 +148,7 @@ export default function SellerOrders() {
                       {order.orderId}
                     </Link>
                     <OrderStatusBadge status={order.status} />
-                    <DeliveryBadge tier={order.deliveryTier} meta={TIER_META[order.deliveryTier]} />
+                    <DeliveryBadge tier={order.deliveryTier} meta={TIER_BADGES[order.deliveryTier]} />
                     {isNew && (
                       <Badge tone="rose" className="animate-fade-in">New</Badge>
                     )}

@@ -1,9 +1,8 @@
 import Pincode from '../models/Pincode.js';
 import Seller from '../models/Seller.js';
-import Product from '../models/Product.js';
 import asyncHandler from '../utils/asyncHandler.js';
-import { resolveLocation } from '../services/catalogService.js';
-import { attachAvailability, resolveFee } from '../services/deliveryEngine.js';
+import { resolveLocation, tierCountsFor } from '../services/catalogService.js';
+import { resolveFee } from '../services/deliveryEngine.js';
 import { TIER_META, TIER_ORDER } from '../utils/constants.js';
 
 /**
@@ -31,26 +30,11 @@ export const checkPincode = asyncHandler(async (req, res) => {
     });
   }
 
-  const sellers = await Seller.find({ servedPincodes: code, status: 'ACTIVE' });
-  const sellerIds = sellers.map((s) => s._id);
+  const sellers = await Seller.find({ servedPincodes: code, status: 'ACTIVE' }).select('_id').lean();
 
-  // Sample the live catalogue rather than trusting the pincode flags alone —
-  // a tier is only "available" if something can actually arrive that fast.
-  const products = await Product.find({
-    isActive: true,
-    approvalStatus: 'APPROVED',
-    stock: { $gt: 0 },
-    $or: [{ seller: { $in: sellerIds } }, { isPerishable: false }],
-  })
-    .populate('seller')
-    .limit(400)
-    .lean();
-
-  const counts = Object.fromEntries(TIER_ORDER.map((t) => [t, 0]));
-  products.forEach((product) => {
-    const { availability } = attachAvailability(product, { seller: product.seller, pincodeDoc, zone });
-    if (availability.deliverable) counts[availability.tier] += 1;
-  });
+  // Counted, not loaded: the local half is classified and the shipped half is
+  // a single countDocuments, so this stays flat as the catalogue grows.
+  const counts = await tierCountsFor(pincodeDoc, zone);
 
   const tiers = TIER_ORDER.filter((t) => counts[t] > 0).map((tier) => ({
     ...TIER_META[tier],
