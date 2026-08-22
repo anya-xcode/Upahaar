@@ -120,11 +120,14 @@ To run just one side: `npm run dev:server` or `npm run dev:client`.
 ### 6. Verify it's working
 
 ```bash
-curl "http://localhost:5001/api/health"
+curl "http://localhost:5001/api/health"                          # process is up
+curl "http://localhost:5001/api/ready"                           # and can reach MongoDB
 curl "http://localhost:5001/api/location/check?pincode=110016"
 ```
 
-The second should report `"serviceable": true` with a tier breakdown.
+`/ready` returns **503** if the database is unreachable, so a load balancer takes
+the instance out rather than a customer finding out. The third should report
+`"serviceable": true` with a tier breakdown.
 
 ### 7. Sign in
 
@@ -306,11 +309,14 @@ Upahaar/
 ├── server/                     Express + Mongoose API
 │   └── src/
 │       ├── models/             22 Mongoose models
-│       ├── services/           deliveryEngine · catalog · cart · coupon · notification
+│       ├── services/           deliveryEngine · catalog · cart · coupon
+│       │                       notification · analytics
 │       ├── controllers/        auth · product · location · cart · order · account
 │       │                       review · seller · admin · adminCms · catalog
 │       ├── routes/             auth · public · customer · seller · admin
-│       ├── middleware/         JWT auth, role gates, error normalisation
+│       ├── middleware/         JWT auth · role gates · zod validation
+│       │                       request logging · error normalisation
+│       ├── utils/              schemas (zod) · logger · cache · helpers
 │       └── seed/               seed.js + realistic demo data
 └── client/                     React 18 + Vite + Tailwind
     └── src/
@@ -321,7 +327,7 @@ Upahaar/
 ```
 
 **Stack:** React 18, Vite 6, Tailwind 3, React Router 6, Zustand, Axios, Recharts ·
-Node, Express 4, MongoDB, Mongoose 8, JWT, bcrypt.
+Node, Express 4, MongoDB, Mongoose 8, JWT, bcrypt, zod.
 
 ### Design system
 
@@ -355,6 +361,8 @@ middleware.
   cannot read or write another store
 - Admins sign in through a **separate endpoint** (`/api/auth/admin/login`); admin credentials are
   rejected by the storefront login
+- Request schemas are allow-lists, so a privileged field a client shouldn't set (`approvalStatus`,
+  `rating`, a coupon's `usageCount`) is stripped before the controller runs
 
 ### Data integrity
 
@@ -403,18 +411,76 @@ on every catalogue request and change a few times a day.
 collection. The seam is `loadLocal` in `catalogService.js`; it logs a warning if
 the local scan cap is ever reached rather than truncating silently.
 
+### Admin numbers
+
+The dashboard is fifteen collection-wide counts and the charts are six
+aggregations, refetched on every visit. Both are read through the same TTL cache
+(`services/analyticsService.js`) — 30 s for the dashboard, 5 min for the charts —
+and the response carries `generatedAt`, which the panel prints, so nothing
+pretends to be live that isn't. An admin action that moves a number
+(approve, suspend, refund, moderate, pay out) drops the cache, so their own click
+is always reflected immediately.
+
+| | Cold | Cached |
+|---|---|---|
+| `/api/admin/dashboard` | 27 ms | **5 ms** |
+| `/api/admin/analytics` | 38 ms | **5 ms** |
+
+Concurrent misses on a cold key share one lookup rather than stampeding Mongo.
+
+### Request validation
+
+Every write endpoint validates its body against a **zod** schema before the
+controller runs (`utils/schemas.js`, wired by `middleware/validate.js`). Three
+things follow from that:
+
+- The rule for "what is a valid order" is stated once, not re-derived per
+  controller. Messages are written to be shown to a customer verbatim, and the
+  400 carries a `details` array so a form can mark every bad field at once.
+- `req.body` is **replaced** with the parsed value, so controllers can trust
+  their input — no more `Number(x)` and `String(y).toUpperCase()` scattered
+  through handlers.
+- Schemas are **allow-lists**. A seller sending `approvalStatus: 'APPROVED'`
+  with their product edit has it stripped before the controller sees it; the
+  same goes for `slug`, `rating`, `soldCount`, a PIN code's `code`, and a
+  coupon's `usageCount`. Privilege escalation is prevented by the shape rather
+  than by remembering to blocklist a field.
+
+### Running in production
+
+- **Structured logs.** One JSON object per line in production, coloured and short
+  in development (`utils/logger.js`). Every request gets an `X-Request-Id` —
+  honoured from an upstream proxy if present — and everything logged during that
+  request carries it, including the 500, which also returns the id to the caller.
+  Bodies are never logged; the user id and role are. Set `LOG_LEVEL` to filter,
+  `LOG_FORMAT=json` to force JSON locally.
+- **Two probes.** `GET /api/health` is liveness: it answers without touching
+  anything, so a restarter never kills a healthy process because Mongo is slow.
+  `GET /api/ready` is readiness: it pings Mongo and returns **503** if the
+  database is unreachable or the instance is draining.
+- **Graceful shutdown.** `SIGTERM`/`SIGINT` fails readiness first (so traffic
+  moves away), closes the listener so in-flight requests finish, closes Mongo,
+  then exits — with a `SHUTDOWN_GRACE_MS` hard deadline behind it, because a
+  shutdown that hangs gets killed anyway and takes its logs with it. An
+  unhandled rejection or uncaught exception is logged and then goes through the
+  same path.
+
 ### Maintenance
 
 ```bash
 npm run verify      # lint + test + build — what CI runs
 npm run lint        # ESLint across both workspaces
-npm run test        # 40 tests
+npm run test        # 79 tests
 ```
 
-- **40 tests.** `deliveryEngine.test.js` covers the engine as pure functions —
+- **79 tests.** `deliveryEngine.test.js` covers the engine as pure functions —
   every gate, every degradation path, with the clock pinned. `catalogue.test.js`
   runs against a real MongoDB (`upahaar_test`, dropped after) and covers
   visibility gates, tiers, filters, and pagination over a 900-product catalogue.
+  `validation.test.js` covers the schemas, including every field a client is not
+  allowed to set. `observability.test.js` pins the two things an on-call engineer
+  depends on: a request and its error sharing an id, and an `Error` surviving
+  serialisation instead of arriving as `{}`.
 - **ESLint** is configured for the bug class that actually shipped here once: an
   identifier used but never imported, which Rollup compiles happily and the
   browser throws on. Zero errors; warnings are advisory.

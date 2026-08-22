@@ -8,165 +8,22 @@ import SellerPayout from '../models/SellerPayout.js';
 import Payment from '../models/Payment.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
-import { paginate, startOfToday, daysAgo, money } from '../utils/helpers.js';
-import { ORDER_STATUS, SELLER_STATUS, KYC_STATUS, TIER_META, TIER_ORDER, ROLES } from '../utils/constants.js';
+import { paginate, money } from '../utils/helpers.js';
+import { SELLER_STATUS, KYC_STATUS, ROLES } from '../utils/constants.js';
 import { notifySeller } from '../services/notificationService.js';
+import { adminDashboard, adminAnalytics, invalidateAnalytics } from '../services/analyticsService.js';
 import { recalcAggregates } from './reviewController.js';
 
 /* -------------------------------- Dashboard ------------------------------- */
 
 /** GET /api/admin/dashboard */
 export const dashboard = asyncHandler(async (_req, res) => {
-  const today = startOfToday();
-
-  const [
-    totalUsers,
-    totalSellers,
-    activeSellers,
-    pendingSellers,
-    pendingKyc,
-    totalOrders,
-    todaysOrders,
-    cancelledOrders,
-    activeProducts,
-    pendingProducts,
-    pendingReviews,
-    revenueAgg,
-    todayRevenueAgg,
-    commissionAgg,
-    refundAgg,
-  ] = await Promise.all([
-    User.countDocuments({ role: ROLES.CUSTOMER }),
-    Seller.countDocuments(),
-    Seller.countDocuments({ status: SELLER_STATUS.ACTIVE }),
-    Seller.countDocuments({ status: SELLER_STATUS.PENDING }),
-    Seller.countDocuments({ kycStatus: KYC_STATUS.PENDING }),
-    Order.countDocuments(),
-    Order.countDocuments({ createdAt: { $gte: today } }),
-    Order.countDocuments({ status: ORDER_STATUS.CANCELLED }),
-    Product.countDocuments({ isActive: true, approvalStatus: 'APPROVED' }),
-    Product.countDocuments({ approvalStatus: 'PENDING' }),
-    Review.countDocuments({ status: 'PENDING' }),
-    Order.aggregate([
-      { $match: { status: { $ne: ORDER_STATUS.CANCELLED } } },
-      { $group: { _id: null, total: { $sum: '$total' } } },
-    ]),
-    Order.aggregate([
-      { $match: { status: { $ne: ORDER_STATUS.CANCELLED }, createdAt: { $gte: today } } },
-      { $group: { _id: null, total: { $sum: '$total' } } },
-    ]),
-    Commission.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]),
-    Payment.aggregate([
-      { $match: { status: 'REFUNDED' } },
-      { $group: { _id: null, total: { $sum: '$refundAmount' }, count: { $sum: 1 } } },
-    ]),
-  ]);
-
-  res.json({
-    success: true,
-    stats: {
-      totalUsers,
-      totalSellers,
-      activeSellers,
-      pendingSellers,
-      pendingKyc,
-      totalOrders,
-      todaysOrders,
-      cancelledOrders,
-      activeProducts,
-      pendingProducts,
-      pendingReviews,
-      revenue: money(revenueAgg[0]?.total || 0),
-      todayRevenue: money(todayRevenueAgg[0]?.total || 0),
-      commission: money(commissionAgg[0]?.total || 0),
-      refunds: money(refundAgg[0]?.total || 0),
-      refundCount: refundAgg[0]?.count || 0,
-    },
-  });
+  res.json({ success: true, ...(await adminDashboard()) });
 });
 
 /** GET /api/admin/analytics — everything the charts render from. */
 export const analytics = asyncHandler(async (_req, res) => {
-  const [dailyRaw, monthlyRaw, byCategory, byLocation, byTier, topSellers] = await Promise.all([
-    Order.aggregate([
-      { $match: { createdAt: { $gte: daysAgo(29) }, status: { $ne: ORDER_STATUS.CANCELLED } } },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-          revenue: { $sum: '$total' },
-          orders: { $sum: 1 },
-        },
-      },
-    ]),
-    Order.aggregate([
-      { $match: { status: { $ne: ORDER_STATUS.CANCELLED } } },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
-          revenue: { $sum: '$total' },
-          orders: { $sum: 1 },
-        },
-      },
-      { $sort: { _id: 1 } },
-      { $limit: 12 },
-    ]),
-    Order.aggregate([
-      { $unwind: '$items' },
-      { $lookup: { from: 'products', localField: 'items.product', foreignField: '_id', as: 'p' } },
-      { $unwind: '$p' },
-      { $lookup: { from: 'categories', localField: 'p.category', foreignField: '_id', as: 'c' } },
-      { $unwind: '$c' },
-      {
-        $group: {
-          _id: { name: '$c.name', icon: '$c.icon' },
-          orders: { $sum: '$items.quantity' },
-          revenue: { $sum: '$items.lineTotal' },
-        },
-      },
-      { $sort: { revenue: -1 } },
-      { $limit: 10 },
-    ]),
-    Order.aggregate([
-      { $group: { _id: { pincode: '$shippingAddress.pincode', city: '$shippingAddress.city' }, orders: { $sum: 1 }, revenue: { $sum: '$total' } } },
-      { $sort: { orders: -1 } },
-      { $limit: 12 },
-    ]),
-    Order.aggregate([{ $group: { _id: '$deliveryTier', orders: { $sum: 1 }, revenue: { $sum: '$total' } } }]),
-    Order.aggregate([
-      { $match: { status: { $ne: ORDER_STATUS.CANCELLED } } },
-      { $unwind: '$sellers' },
-      { $group: { _id: '$sellers', orders: { $sum: 1 }, revenue: { $sum: '$total' } } },
-      { $sort: { revenue: -1 } },
-      { $limit: 8 },
-      { $lookup: { from: 'sellers', localField: '_id', foreignField: '_id', as: 's' } },
-      { $unwind: '$s' },
-      { $project: { businessName: '$s.businessName', slug: '$s.slug', rating: '$s.rating', orders: 1, revenue: 1 } },
-    ]),
-  ]);
-
-  const dailyMap = Object.fromEntries(dailyRaw.map((d) => [d._id, d]));
-  const dailySales = Array.from({ length: 30 }, (_, i) => {
-    const key = daysAgo(29 - i).toISOString().slice(0, 10);
-    return { date: key, revenue: dailyMap[key]?.revenue || 0, orders: dailyMap[key]?.orders || 0 };
-  });
-
-  const tierMap = Object.fromEntries(byTier.map((t) => [t._id, t]));
-
-  res.json({
-    success: true,
-    dailySales,
-    monthlyRevenue: monthlyRaw.map((m) => ({ month: m._id, revenue: m.revenue, orders: m.orders })),
-    ordersByCategory: byCategory.map((c) => ({ name: c._id.name, icon: c._id.icon, orders: c.orders, revenue: c.revenue })),
-    ordersByLocation: byLocation.map((l) => ({ pincode: l._id.pincode, city: l._id.city, orders: l.orders, revenue: l.revenue })),
-    ordersByTier: TIER_ORDER.map((tier) => ({
-      tier,
-      label: TIER_META[tier].shortLabel,
-      badge: TIER_META[tier].badge,
-      orders: tierMap[tier]?.orders || 0,
-      revenue: tierMap[tier]?.revenue || 0,
-    })),
-    topSellers,
-  });
+  res.json({ success: true, ...(await adminAnalytics()) });
 });
 
 /* ---------------------------- Seller management --------------------------- */
@@ -218,7 +75,6 @@ export const getSeller = asyncHandler(async (req, res) => {
  */
 export const updateSellerStatus = asyncHandler(async (req, res) => {
   const { status, reason } = req.body;
-  if (!Object.values(SELLER_STATUS).includes(status)) throw new ApiError(400, 'Unknown seller status');
 
   const seller = await Seller.findById(req.params.id);
   if (!seller) throw new ApiError(404, 'Seller not found');
@@ -244,12 +100,12 @@ export const updateSellerStatus = asyncHandler(async (req, res) => {
     await notifySeller(seller.user, { ...messages[status], icon: 'store', type: 'KYC', link: '/seller/profile' });
   }
 
+  invalidateAnalytics();
   res.json({ success: true, seller });
 });
 
 export const updateSellerKyc = asyncHandler(async (req, res) => {
   const { kycStatus, note } = req.body;
-  if (!Object.values(KYC_STATUS).includes(kycStatus)) throw new ApiError(400, 'Unknown KYC status');
 
   const seller = await Seller.findByIdAndUpdate(
     req.params.id,
@@ -266,6 +122,7 @@ export const updateSellerKyc = asyncHandler(async (req, res) => {
     link: '/seller/profile',
   });
 
+  invalidateAnalytics();
   res.json({ success: true, seller });
 });
 
@@ -308,6 +165,8 @@ export const toggleUserActive = asyncHandler(async (req, res) => {
 
   user.isActive = !user.isActive;
   await user.save();
+
+  invalidateAnalytics();
   res.json({ success: true, user: { id: user._id, isActive: user.isActive } });
 });
 
@@ -365,6 +224,7 @@ export const refundOrder = asyncHandler(async (req, res) => {
     { $set: { status: 'REFUNDED', refundedAt: new Date(), refundAmount: money(amount) } }
   );
 
+  invalidateAnalytics();
   res.json({ success: true, order });
 });
 
@@ -391,7 +251,6 @@ export const listAllReviews = asyncHandler(async (req, res) => {
 
 export const moderateReview = asyncHandler(async (req, res) => {
   const { status, note } = req.body;
-  if (!['PENDING', 'APPROVED', 'REJECTED'].includes(status)) throw new ApiError(400, 'Unknown review status');
 
   const review = await Review.findByIdAndUpdate(
     req.params.id,
@@ -401,6 +260,8 @@ export const moderateReview = asyncHandler(async (req, res) => {
   if (!review) throw new ApiError(404, 'Review not found');
 
   await recalcAggregates(review.product, review.seller);
+
+  invalidateAnalytics();
   res.json({ success: true, review });
 });
 
@@ -463,5 +324,6 @@ export const createPayout = asyncHandler(async (req, res) => {
     });
   }
 
+  invalidateAnalytics();
   res.status(201).json({ success: true, payout });
 });

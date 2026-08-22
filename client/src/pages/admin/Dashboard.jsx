@@ -12,6 +12,7 @@ import { NotificationGlyph } from '../../lib/glyphs.jsx';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
+  const [generatedAt, setGeneratedAt] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [orders, setOrders] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -26,6 +27,7 @@ export default function AdminDashboard() {
     ])
       .then(([d, a, o, n]) => {
         setStats(d.data.stats);
+        setGeneratedAt(d.data.generatedAt);
         setAnalytics(a.data);
         setOrders(o.data.orders);
         setNotifications(n.data.notifications.slice(0, 5));
@@ -52,7 +54,13 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <PageHeader
         title="Platform overview"
-        subtitle="Everything happening across Upahaar right now."
+        subtitle={
+          // These figures are read through a short-lived cache, so say when they
+          // were taken rather than implying they are live to the second.
+          generatedAt
+            ? `Everything happening across Upahaar · figures as of ${formatDateTime(generatedAt)}`
+            : 'Everything happening across Upahaar right now.'
+        }
         action={
           <div className="flex gap-2">
             <Link to="/admin/analytics" className="btn-ghost btn-sm">Full analytics <ChevronRight size={13} /></Link>

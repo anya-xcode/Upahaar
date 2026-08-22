@@ -46,9 +46,8 @@ async function respondWithSession(res, user, statusCode = 200) {
 /** POST /api/auth/register — customer signup. */
 export const register = asyncHandler(async (req, res) => {
   const { name, email, password, mobile, pincode, referredBy } = req.body;
-  if (!name || !email || !password) throw new ApiError(400, 'Name, email and password are required');
 
-  const exists = await User.findOne({ email: String(email).toLowerCase() });
+  const exists = await User.findOne({ email });
   if (exists) throw new ApiError(409, 'An account with that email already exists');
 
   const user = await User.create({
@@ -79,9 +78,8 @@ export const register = asyncHandler(async (req, res) => {
 /** POST /api/auth/login — customers and sellers. */
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) throw new ApiError(400, 'Email and password are required');
 
-  const user = await User.findOne({ email: String(email).toLowerCase() }).select('+password');
+  const user = await User.findOne({ email }).select('+password');
   if (!user || !(await user.comparePassword(password))) {
     throw new ApiError(401, 'Incorrect email or password');
   }
@@ -125,10 +123,7 @@ export const registerSeller = asyncHandler(async (req, res) => {
     description,
   } = req.body;
 
-  if (!email || !password || !businessName) {
-    throw new ApiError(400, 'Business name, email and password are required');
-  }
-  if (await User.findOne({ email: String(email).toLowerCase() })) {
+  if (await User.findOne({ email })) {
     throw new ApiError(409, 'An account with that email already exists');
   }
 
@@ -150,7 +145,7 @@ export const registerSeller = asyncHandler(async (req, res) => {
     slug: await uniqueSlug(Seller, businessName),
     description,
     address,
-    servedPincodes: Array.isArray(servedPincodes) ? servedPincodes : [],
+    servedPincodes,
     deliveryRadiusKm: deliveryRadiusKm ?? 10,
     gstNumber,
     panNumber,
@@ -191,10 +186,9 @@ export const updateMe = asyncHandler(async (req, res) => {
 /** PATCH /api/auth/password */
 export const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  if (!newPassword || newPassword.length < 6) throw new ApiError(400, 'New password must be at least 6 characters');
 
   const user = await User.findById(req.user._id).select('+password');
-  if (!(await user.comparePassword(currentPassword || ''))) throw new ApiError(401, 'Current password is incorrect');
+  if (!(await user.comparePassword(currentPassword))) throw new ApiError(401, 'Current password is incorrect');
 
   user.password = newPassword;
   await user.save();

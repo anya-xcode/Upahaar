@@ -54,22 +54,15 @@ export const placeOrder = asyncHandler(async (req, res) => {
     specialInstructions,
   } = req.body;
 
-  if (!paymentMethod || !Object.values(PAYMENT_METHODS).includes(paymentMethod)) {
-    throw new ApiError(400, 'Please choose a payment method');
-  }
-
   // --- Resolve the delivery address ---
+  // The schema guarantees one of the two arrived and that a typed-in address is
+  // complete; what's left is the ownership check.
   let address;
   if (addressId) {
     address = await Address.findOne({ _id: addressId, user: req.user._id });
     if (!address) throw new ApiError(404, 'Delivery address not found');
-  } else if (addressInput) {
-    const required = ['name', 'mobile', 'pincode', 'house', 'city', 'state'];
-    const missing = required.filter((f) => !addressInput[f]);
-    if (missing.length) throw new ApiError(400, `Please fill in: ${missing.join(', ')}`);
-    address = saveAddress === false ? addressInput : await Address.create({ ...addressInput, user: req.user._id });
   } else {
-    throw new ApiError(400, 'A delivery address is required');
+    address = saveAddress === false ? addressInput : await Address.create({ ...addressInput, user: req.user._id });
   }
 
   // --- Recompute the cart against this address ---

@@ -12,6 +12,7 @@ import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { notifySeller } from '../services/notificationService.js';
+import { invalidateAnalytics } from '../services/analyticsService.js';
 import { ApiError } from '../utils/ApiError.js';
 import { uniqueSlug, paginate } from '../utils/helpers.js';
 
@@ -118,7 +119,6 @@ export const listPincodes = asyncHandler(async (req, res) => {
 });
 
 export const createPincode = asyncHandler(async (req, res) => {
-  if (!/^\d{6}$/.test(String(req.body.code || ''))) throw new ApiError(400, 'PIN code must be 6 digits');
   if (await Pincode.exists({ code: req.body.code })) throw new ApiError(409, 'That PIN code already exists');
 
   const pincode = await Pincode.create(req.body);
@@ -126,9 +126,9 @@ export const createPincode = asyncHandler(async (req, res) => {
 });
 
 export const updatePincode = asyncHandler(async (req, res) => {
-  const payload = { ...req.body };
-  delete payload.code; // the code is the identity — changing it would orphan sellers
-  const pincode = await Pincode.findByIdAndUpdate(req.params.id, { $set: payload }, { new: true, runValidators: true });
+  // `code` is the identity — changing it would orphan sellers, so the patch
+  // schema omits it rather than the controller deleting it after the fact.
+  const pincode = await Pincode.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true, runValidators: true });
   if (!pincode) throw new ApiError(404, 'PIN code not found');
   res.json({ success: true, pincode });
 });
@@ -190,22 +190,17 @@ export const listCoupons = asyncHandler(async (req, res) => {
 });
 
 export const createCoupon = asyncHandler(async (req, res) => {
-  const code = String(req.body.code || '').toUpperCase().trim();
-  if (!code) throw new ApiError(400, 'A coupon code is required');
+  const { code } = req.body;
   if (await Coupon.exists({ code })) throw new ApiError(409, 'That coupon code already exists');
-  if (!req.body.value || Number(req.body.value) <= 0) throw new ApiError(400, 'Discount value must be greater than zero');
 
-  const coupon = await Coupon.create({ ...req.body, code });
+  const coupon = await Coupon.create(req.body);
   res.status(201).json({ success: true, coupon });
 });
 
 export const updateCoupon = asyncHandler(async (req, res) => {
-  const payload = { ...req.body };
-  if (payload.code) payload.code = String(payload.code).toUpperCase().trim();
-  delete payload.usageCount;
-  delete payload.usedBy;
-
-  const coupon = await Coupon.findByIdAndUpdate(req.params.id, { $set: payload }, { new: true, runValidators: true });
+  // The schema is an allow-list, so `usageCount` and `usedBy` cannot be edited
+  // from here — a redemption tally is ours to keep, not an admin's to reset.
+  const coupon = await Coupon.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true, runValidators: true });
   if (!coupon) throw new ApiError(404, 'Coupon not found');
   res.json({ success: true, coupon });
 });
@@ -227,7 +222,6 @@ export const adminNotifications = asyncHandler(async (req, res) => {
 /** POST /api/admin/notifications/broadcast — announce to a whole role. */
 export const broadcast = asyncHandler(async (req, res) => {
   const { audience, title, body, icon, link } = req.body;
-  if (!audience || !title) throw new ApiError(400, 'Audience and title are required');
 
   const recipients = await User.find({ role: audience, isActive: true }).select('_id').lean();
   if (!recipients.length) throw new ApiError(400, 'No recipients for that audience');
@@ -289,12 +283,6 @@ export const listAllProducts = asyncHandler(async (req, res) => {
  */
 export const reviewProduct = asyncHandler(async (req, res) => {
   const { approvalStatus, note } = req.body;
-  if (!['PENDING', 'APPROVED', 'REJECTED'].includes(approvalStatus)) {
-    throw new ApiError(400, 'Unknown approval status');
-  }
-  if (approvalStatus === 'REJECTED' && !note?.trim()) {
-    throw new ApiError(400, 'Tell the seller why it was rejected');
-  }
 
   const product = await Product.findById(req.params.id).populate('seller', 'user businessName');
   if (!product) throw new ApiError(404, 'Product not found');
@@ -319,6 +307,7 @@ export const reviewProduct = asyncHandler(async (req, res) => {
     });
   }
 
+  invalidateAnalytics();
   res.json({ success: true, product });
 });
 
@@ -332,5 +321,7 @@ export const toggleProductActive = asyncHandler(async (req, res) => {
   if (req.body.isActive !== undefined) product.isActive = req.body.isActive;
 
   await product.save();
+
+  invalidateAnalytics();
   res.json({ success: true, product });
 });

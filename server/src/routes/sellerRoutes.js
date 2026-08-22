@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import * as seller from '../controllers/sellerController.js';
 import { protect, restrictTo, requireSeller, requireActiveSeller } from '../middleware/auth.js';
+import validate from '../middleware/validate.js';
 import { ROLES } from '../utils/constants.js';
+import { productSchema, productPatchSchema, stockAdjustSchema } from '../utils/schemas.js';
 
 const router = Router();
 
@@ -21,11 +23,11 @@ router.get('/meta', seller.productFormMeta);
 router.use(requireActiveSeller);
 
 router.get('/products', seller.listProducts);
-router.post('/products', seller.createProduct);
+router.post('/products', validate({ body: productSchema }), seller.createProduct);
 router.get('/products/:id', seller.getProduct);
-router.patch('/products/:id', seller.updateProduct);
+router.patch('/products/:id', validate({ body: productPatchSchema }), seller.updateProduct);
 router.delete('/products/:id', seller.deleteProduct);
-router.patch('/products/:id/stock', seller.adjustStock);
+router.patch('/products/:id/stock', validate({ body: stockAdjustSchema }), seller.adjustStock);
 router.get('/inventory/log', seller.inventoryLog);
 
 router.get('/orders', seller.listOrders);

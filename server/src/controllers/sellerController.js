@@ -214,8 +214,7 @@ export const getProduct = asyncHandler(async (req, res) => {
 
 /** POST /api/seller/products */
 export const createProduct = asyncHandler(async (req, res) => {
-  const { name, price, category } = req.body;
-  if (!name || price == null || !category) throw new ApiError(400, 'Name, price and category are required');
+  const { name, category } = req.body;
   if (!(await Category.exists({ _id: category }))) throw new ApiError(400, 'Choose a valid category');
 
   const product = await Product.create({
@@ -259,8 +258,8 @@ export const updateProduct = asyncHandler(async (req, res) => {
   if (!product) throw new ApiError(404, 'Product not found');
 
   const previousStock = product.stock;
-  // A seller can never set their own approval state.
-  const blocked = ['seller', 'slug', 'rating', 'reviewCount', 'soldCount', 'approvalStatus', 'approvalNote', 'reviewedAt'];
+  // `stockNote` describes the change rather than being part of the product.
+  const { stockNote, ...patch } = req.body;
 
   /**
    * Changing what the customer *reads* re-opens review; changing price, stock
@@ -269,12 +268,16 @@ export const updateProduct = asyncHandler(async (req, res) => {
    */
   const REVIEWABLE = ['name', 'description', 'images', 'highlights'];
   const contentChanged = REVIEWABLE.some(
-    (f) => req.body[f] !== undefined && JSON.stringify(req.body[f]) !== JSON.stringify(product[f])
+    (f) => patch[f] !== undefined && JSON.stringify(patch[f]) !== JSON.stringify(product[f])
   );
+  // Captured before the assign below, or the comparison would be against the
+  // value we just wrote and the slug would never follow a rename.
+  const renamedTo = patch.name && patch.name !== product.name ? patch.name : null;
 
-  Object.keys(req.body).forEach((key) => {
-    if (!blocked.includes(key)) product[key] = req.body[key];
-  });
+  // Safe to assign wholesale: the schema is an allow-list, so `seller`, `slug`,
+  // `rating` and `approvalStatus` were stripped before this ran — a seller can
+  // never set their own approval state.
+  Object.assign(product, patch);
 
   if (contentChanged && product.approvalStatus === 'APPROVED') {
     product.approvalStatus = 'PENDING';
@@ -282,20 +285,20 @@ export const updateProduct = asyncHandler(async (req, res) => {
     product.reviewedAt = undefined;
   }
 
-  if (req.body.name && req.body.name !== product.name) {
-    product.slug = await uniqueSlug(Product, req.body.name, product._id);
+  if (renamedTo) {
+    product.slug = await uniqueSlug(Product, renamedTo, product._id);
   }
 
   await product.save();
 
-  if (req.body.stock !== undefined && product.stock !== previousStock) {
+  if (patch.stock !== undefined && product.stock !== previousStock) {
     await InventoryLog.create({
       product: product._id,
       seller: req.seller._id,
       change: product.stock - previousStock,
       stockAfter: product.stock,
       reason: 'ADJUSTMENT',
-      note: req.body.stockNote || 'Manual update',
+      note: stockNote || 'Manual update',
     });
   }
 
@@ -331,7 +334,7 @@ export const adjustStock = asyncHandler(async (req, res) => {
   const product = await Product.findOne({ _id: req.params.id, seller: req.seller._id });
   if (!product) throw new ApiError(404, 'Product not found');
 
-  const next = absolute != null ? Number(absolute) : product.stock + Number(change || 0);
+  const next = absolute != null ? absolute : product.stock + (change || 0);
   if (next < 0) throw new ApiError(400, 'Stock cannot go below zero');
 
   const delta = next - product.stock;

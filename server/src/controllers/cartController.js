@@ -27,7 +27,7 @@ export const getCart = asyncHandler(async (req, res) => {
 
 /** POST /api/cart/items */
 export const addItem = asyncHandler(async (req, res) => {
-  const { productId, quantity = 1, variant, personalization, deliveryDate, deliveryWindow, specialInstructions } = req.body;
+  const { productId, quantity, variant, personalization, deliveryDate, deliveryWindow, specialInstructions } = req.body;
 
   const product = await Product.findById(productId);
   if (!product || !product.isActive) throw new ApiError(404, 'That gift is no longer available');
@@ -42,13 +42,13 @@ export const addItem = asyncHandler(async (req, res) => {
     : null;
 
   if (existing) {
-    const nextQty = existing.quantity + Number(quantity);
+    const nextQty = existing.quantity + quantity;
     if (product.stock < nextQty) throw new ApiError(400, `Only ${product.stock} left in stock`);
     existing.quantity = nextQty;
   } else {
     cart.items.push({
       product: productId,
-      quantity: Number(quantity),
+      quantity,
       variant,
       personalization,
       deliveryDate,
@@ -71,8 +71,7 @@ export const updateItem = asyncHandler(async (req, res) => {
   if (!item) throw new ApiError(404, 'Item not found in your cart');
 
   if (req.body.quantity !== undefined) {
-    const quantity = Number(req.body.quantity);
-    if (quantity < 1) throw new ApiError(400, 'Quantity must be at least 1');
+    const { quantity } = req.body;
     const product = await Product.findById(item.product);
     if (product && product.stock < quantity) throw new ApiError(400, `Only ${product.stock} left in stock`);
     item.quantity = quantity;
@@ -137,7 +136,7 @@ export const applyCartCoupon = asyncHandler(async (req, res) => {
     pincode: cart.pincode,
   });
 
-  cart.appliedCoupon = String(req.body.code).toUpperCase();
+  cart.appliedCoupon = req.body.code;
   await cart.save();
 
   res.json({

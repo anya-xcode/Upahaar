@@ -131,8 +131,6 @@ export const listReminders = asyncHandler(async (req, res) => {
 });
 
 export const createReminder = asyncHandler(async (req, res) => {
-  const { title, month, day } = req.body;
-  if (!title || !month || !day) throw new ApiError(400, 'Title, month and day are required');
   const reminder = await GiftReminder.create({ ...req.body, user: req.user._id });
   res.status(201).json({ success: true, reminder });
 });
@@ -185,7 +183,6 @@ export const listSavedPayments = asyncHandler(async (req, res) => {
 
 export const addSavedPayment = asyncHandler(async (req, res) => {
   const { label, method, maskedValue, isDefault } = req.body;
-  if (!method || !maskedValue) throw new ApiError(400, 'Payment details are incomplete');
 
   if (isDefault) req.user.savedPayments.forEach((m) => { m.isDefault = false; });
   req.user.savedPayments.push({ label, method, maskedValue, isDefault: Boolean(isDefault) });

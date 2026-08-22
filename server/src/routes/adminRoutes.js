@@ -2,7 +2,19 @@ import { Router } from 'express';
 import * as admin from '../controllers/adminController.js';
 import * as cms from '../controllers/adminCmsController.js';
 import { protect, restrictTo } from '../middleware/auth.js';
+import validate from '../middleware/validate.js';
 import { ROLES } from '../utils/constants.js';
+import {
+  sellerStatusSchema,
+  sellerKycSchema,
+  productApprovalSchema,
+  reviewModerationSchema,
+  pincodeSchema,
+  pincodePatchSchema,
+  couponSchema,
+  couponPatchSchema,
+  broadcastSchema,
+} from '../utils/schemas.js';
 
 const router = Router();
 
@@ -16,8 +28,8 @@ router.get('/analytics', admin.analytics);
 router.get('/sellers', admin.listSellers);
 router.get('/sellers/:id', admin.getSeller);
 router.patch('/sellers/:id', admin.updateSeller);
-router.patch('/sellers/:id/status', admin.updateSellerStatus);
-router.patch('/sellers/:id/kyc', admin.updateSellerKyc);
+router.patch('/sellers/:id/status', validate({ body: sellerStatusSchema }), admin.updateSellerStatus);
+router.patch('/sellers/:id/kyc', validate({ body: sellerKycSchema }), admin.updateSellerKyc);
 
 /* ------------------------------ Users & orders --------------------------- */
 router.get('/users', admin.listUsers);
@@ -30,11 +42,11 @@ router.post('/orders/:orderId/refund', admin.refundOrder);
 /* -------------------------------- Products ------------------------------- */
 router.get('/products', cms.listAllProducts);
 router.patch('/products/:id', cms.toggleProductActive);
-router.patch('/products/:id/approval', cms.reviewProduct);
+router.patch('/products/:id/approval', validate({ body: productApprovalSchema }), cms.reviewProduct);
 
 /* ------------------------------ Moderation ------------------------------- */
 router.get('/reviews', admin.listAllReviews);
-router.patch('/reviews/:id', admin.moderateReview);
+router.patch('/reviews/:id', validate({ body: reviewModerationSchema }), admin.moderateReview);
 
 /* -------------------------------- Payouts -------------------------------- */
 router.get('/payouts', admin.listPayouts);
@@ -42,9 +54,9 @@ router.post('/payouts/:sellerId', admin.createPayout);
 
 /* ---------------------------- PIN code manager --------------------------- */
 router.get('/pincodes', cms.listPincodes);
-router.post('/pincodes', cms.createPincode);
+router.post('/pincodes', validate({ body: pincodeSchema }), cms.createPincode);
 router.get('/pincodes/:code/detail', cms.pincodeDetail);
-router.patch('/pincodes/:id', cms.updatePincode);
+router.patch('/pincodes/:id', validate({ body: pincodePatchSchema }), cms.updatePincode);
 router.delete('/pincodes/:id', cms.deletePincode);
 
 router.get('/zones', cms.zones.list);
@@ -54,8 +66,8 @@ router.delete('/zones/:id', cms.zones.remove);
 
 /* -------------------------------- Coupons -------------------------------- */
 router.get('/coupons', cms.listCoupons);
-router.post('/coupons', cms.createCoupon);
-router.patch('/coupons/:id', cms.updateCoupon);
+router.post('/coupons', validate({ body: couponSchema }), cms.createCoupon);
+router.patch('/coupons/:id', validate({ body: couponPatchSchema }), cms.updateCoupon);
 router.delete('/coupons/:id', cms.deleteCoupon);
 
 /* ---------------------------------- CMS ---------------------------------- */
@@ -86,6 +98,6 @@ router.delete('/posts/:id', cms.posts.remove);
 
 /* ------------------------------ Notifications ---------------------------- */
 router.get('/notifications', cms.adminNotifications);
-router.post('/notifications/broadcast', cms.broadcast);
+router.post('/notifications/broadcast', validate({ body: broadcastSchema }), cms.broadcast);
 
 export default router;

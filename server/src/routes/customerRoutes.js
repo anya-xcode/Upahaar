@@ -4,7 +4,21 @@ import * as orders from '../controllers/orderController.js';
 import * as account from '../controllers/accountController.js';
 import * as reviews from '../controllers/reviewController.js';
 import { protect, restrictTo } from '../middleware/auth.js';
+import validate from '../middleware/validate.js';
 import { ROLES } from '../utils/constants.js';
+import {
+  cartItemSchema,
+  cartItemPatchSchema,
+  couponCodeSchema,
+  placeOrderSchema,
+  addressSchema,
+  addressPatchSchema,
+  reminderSchema,
+  reminderPatchSchema,
+  reviewSchema,
+  cartPincodeSchema,
+  savedPaymentSchema,
+} from '../utils/schemas.js';
 
 /**
  * Shopping is a customer activity — a seller or admin token must not reach it.
@@ -19,18 +33,18 @@ const customerOnly = [protect, restrictTo(ROLES.CUSTOMER)];
 const cartRouter = Router();
 cartRouter.use(customerOnly);
 cartRouter.get('/', cart.getCart);
-cartRouter.post('/items', cart.addItem);
-cartRouter.patch('/items/:itemId', cart.updateItem);
+cartRouter.post('/items', validate({ body: cartItemSchema }), cart.addItem);
+cartRouter.patch('/items/:itemId', validate({ body: cartItemPatchSchema }), cart.updateItem);
 cartRouter.delete('/items/:itemId', cart.removeItem);
 cartRouter.delete('/', cart.clearCart);
-cartRouter.patch('/pincode', cart.setPincode);
-cartRouter.post('/coupon', cart.applyCartCoupon);
+cartRouter.patch('/pincode', validate({ body: cartPincodeSchema }), cart.setPincode);
+cartRouter.post('/coupon', validate({ body: couponCodeSchema }), cart.applyCartCoupon);
 cartRouter.delete('/coupon', cart.removeCartCoupon);
 
 /* ------------------------------- Orders ------------------------------- */
 const orderRouter = Router();
 orderRouter.use(customerOnly);
-orderRouter.post('/', orders.placeOrder);
+orderRouter.post('/', validate({ body: placeOrderSchema }), orders.placeOrder);
 orderRouter.get('/', orders.myOrders);
 orderRouter.get('/:orderId', orders.getOrder);
 orderRouter.get('/:orderId/track', orders.trackOrder);
@@ -43,8 +57,8 @@ accountRouter.use(customerOnly);
 accountRouter.get('/summary', account.accountSummary);
 
 accountRouter.get('/addresses', account.listAddresses);
-accountRouter.post('/addresses', account.createAddress);
-accountRouter.patch('/addresses/:id', account.updateAddress);
+accountRouter.post('/addresses', validate({ body: addressSchema }), account.createAddress);
+accountRouter.patch('/addresses/:id', validate({ body: addressPatchSchema }), account.updateAddress);
 accountRouter.delete('/addresses/:id', account.deleteAddress);
 
 accountRouter.get('/wishlist', account.getWishlist);
@@ -53,8 +67,8 @@ accountRouter.post('/wishlist/:productId', account.addToWishlist);
 accountRouter.delete('/wishlist/:productId', account.removeFromWishlist);
 
 accountRouter.get('/reminders', account.listReminders);
-accountRouter.post('/reminders', account.createReminder);
-accountRouter.patch('/reminders/:id', account.updateReminder);
+accountRouter.post('/reminders', validate({ body: reminderSchema }), account.createReminder);
+accountRouter.patch('/reminders/:id', validate({ body: reminderPatchSchema }), account.updateReminder);
 accountRouter.delete('/reminders/:id', account.deleteReminder);
 
 accountRouter.get('/notifications', account.listNotifications);
@@ -62,7 +76,7 @@ accountRouter.patch('/notifications/read-all', account.markAllNotificationsRead)
 accountRouter.patch('/notifications/:id/read', account.markNotificationRead);
 
 accountRouter.get('/payments', account.listSavedPayments);
-accountRouter.post('/payments', account.addSavedPayment);
+accountRouter.post('/payments', validate({ body: savedPaymentSchema }), account.addSavedPayment);
 accountRouter.delete('/payments/:id', account.deleteSavedPayment);
 
 accountRouter.get('/coupons', account.myCoupons);
@@ -70,7 +84,7 @@ accountRouter.get('/coupons', account.myCoupons);
 /* ------------------------------- Reviews ------------------------------ */
 const reviewRouter = Router();
 reviewRouter.use(customerOnly);
-reviewRouter.post('/', reviews.createReview);
+reviewRouter.post('/', validate({ body: reviewSchema }), reviews.createReview);
 reviewRouter.get('/mine', reviews.myReviews);
 reviewRouter.get('/pending', reviews.pendingReviews);
 reviewRouter.delete('/:id', reviews.deleteReview);

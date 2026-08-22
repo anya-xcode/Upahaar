@@ -66,8 +66,6 @@ export const listReviews = asyncHandler(async (req, res) => {
 export const createReview = asyncHandler(async (req, res) => {
   const { productId, orderId, productRating, sellerRating, deliveryRating, title, comment, images } = req.body;
 
-  if (!productId || !productRating) throw new ApiError(400, 'Please give the gift a rating');
-
   const order = await Order.findOne({ orderId, customer: req.user._id });
   if (!order) throw new ApiError(404, 'We could not find that order');
   if (order.status !== 'DELIVERED') throw new ApiError(400, 'You can review a gift once it has been delivered');
